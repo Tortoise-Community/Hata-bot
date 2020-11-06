@@ -20,10 +20,10 @@ async def message_create(client, message):
     if lowercase_content in ('owo', '0w0'):
         await client.message_create(message.channel, "OwO")
 
-    elif lowercase_content in ('uwu'):
+    elif lowercase_content in ('uwu',):
         await client.message_create(message.channel, "UwU")
 
-    elif lowercase_content.startswith('ayy'):
+    elif lowercase_content.startswith('ayy',):
         await client.message_create(message.channel, 'Lmfao')
 
 

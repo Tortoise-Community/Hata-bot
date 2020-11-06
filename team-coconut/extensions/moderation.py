@@ -17,11 +17,11 @@ def teardown(lib):
     Reimu.commands.unextend(MODERATION_COMMANDS)
 
 
-@MODERATION_COMMANDS.from_class
-class test:
-    category = 'ADMINISTRATION'
-
-    async def command(client: Client, message: Message):
-        await client.message_create(message.channel, 'Main Client' + client.mention)
-        for client in CLIENTS:
-            await client.message_create(message.channel, 'hi')
+# @MODERATION_COMMANDS.from_class
+# class test:
+#     category = 'ADMINISTRATION'
+#
+#     async def command(client: Client, message: Message):
+#         await client.message_create(message.channel, 'Main Client' + client.mention)
+#         for client in CLIENTS:
+#             await client.message_create(message.channel, 'hi')
