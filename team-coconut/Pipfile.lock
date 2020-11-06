@@ -25,11 +25,11 @@
         },
         "hata": {
             "hashes": [
-                "sha256:2292f7f1be08c058588f468de23a9f7cb2ff8390c4184a42a9ceaf551afc392a",
-                "sha256:cfcd928ea8dc1c24f2732ac5ad7f6999f8ec1fd430737ded87db3e399abd680b"
+                "sha256:693e78837222f4d295641c038cf7e64ba13e1d6858a0d483ed8b0c54bfb1903b",
+                "sha256:743899f2a4c9aabbdacad0bf8da426818191150da841eea672ed05aff2b663f7"
             ],
             "index": "pypi",
-            "version": "==1.1.4"
+            "version": "==1.1.5"
         }
     },
     "develop": {
