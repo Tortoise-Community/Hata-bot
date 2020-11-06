@@ -1,6 +1,6 @@
-# from config import WHITELISTED_OWNERS
-# from hata import CLIENTS, Client, Message
-from hata import CLIENTS
+from config import WHITELISTED_OWNERS
+from hata import CLIENTS, Client, Message
+from hata.ext.commands.command import checks
 
 
 class wrapper:
@@ -23,11 +23,14 @@ class wrapper:
         return func
 
 
-# async def owneronly(client: Client, message: Message, *args, **kwargs):
-#     if message.author.id not in WHITELISTED_OWNERS:
-#         await client.message_create(message.channel, 'You dont have perms to use this command')
-#         return False
-#     return True
+async def owneronly(client: Client, message: Message, *args, **kwargs):
+    if message.author.id not in WHITELISTED_OWNERS:
+        return False
+    return True
+
+
+owneronly = [checks.custom(function=owneronly)]
+
 
 def colourfunc(client, message, name):
     return message.author.color_at(message.guild)

@@ -1,7 +1,6 @@
 import inspect
-from config import WHITELISTED_OWNERS
 from hata import Client, Message, CLIENTS
-from utils.utils import ALL
+from utils.utils import ALL, owneronly
 
 Reimu: Client
 Bcom: Client
@@ -30,10 +29,8 @@ async def ping(client: Client, message: Message):
     await client.message_create(message.channel, f'{client.gateway.latency * 1000.:.0f} ms')
 
 
-@ALL.commands
+@ALL.commands(checks=owneronly)
 async def source(client: Client, message: Message, command: str):
-    if message.author.id not in WHITELISTED_OWNERS:
-        return await client.message_create(message.channel, 'You dont have perms to use this command')
     if command == 'source':
         return
     if command not in client.command_processer.commands.keys():
