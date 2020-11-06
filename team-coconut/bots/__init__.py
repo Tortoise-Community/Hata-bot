@@ -11,10 +11,10 @@ Reimu.name = 'Reimu'
 Bcom = Client(config.BCOM_TOKEN)
 Bcom.name = 'Bcom'
 
-# Crambor = Client(config.CRAMBOR_TOKEN)
-# Crambor.name = 'Crambor'
+Crambor = Client(config.CRAMBOR_TOKEN)
+Crambor.name = 'Crambor'
 
-TO_LOAD = ['bcom', 'reimu', 'common']
+TO_LOAD = ['bcom', 'reimu', 'crambor', 'common']
 
 CLIENT_CONTEXT = {}
 
