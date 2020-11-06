@@ -1,43 +1,42 @@
+import random
+
 import config
-
-from hata import Client, User, UserBase, Message, ChannelBase, Embed, eventlist
-from hata.ext.commands import setup_ext_commands, FlaggedAnnotation, ConverterFlag, checks, Command
-
+from hata import Client, UserBase, ChannelBase, Embed
+from hata.ext.commands import setup_ext_commands, FlaggedAnnotation, ConverterFlag, checks
 from hata.ext.commands.helps.subterranean import SubterraneanHelpCommand
+from utils.utils import colourfunc
 
 Bcom: Client
-setup_ext_commands(Bcom, config.BCOM_PREFIX,mention_prefix=True)
-Bcom.commands(SubterraneanHelpCommand(), 'help')
+setup_ext_commands(Bcom, config.BCOM_PREFIX, mention_prefix=True)
+Bcom.commands(SubterraneanHelpCommand(color=colourfunc), name='help')
 
-
-Bcom.commands(SubterraneanHelpCommand(0x369693), name='help')
-
-@Bcom.events
-async def ready(client):
-    print(f'{client:f} logged in.')
 
 @Bcom.events
 async def message_create(client, message):
     if message.author.is_bot:
-        return 
+        return
     lowercase_content = message.content.lower()
-    
+
     if lowercase_content in ('owo', '0w0'):
         await client.message_create(message.channel, "OwO")
-        
+
     elif lowercase_content in ('uwu'):
         await client.message_create(message.channel, "UwU")
 
     elif lowercase_content.startswith('ayy'):
         await client.message_create(message.channel, 'Lmfao')
-        
+
+
 async def owner_only_handler(client, message, command, check):
     await client.message_create(message.channel, f'You must be the owner of the bot to use the `{command}` command.')
+
 
 @Bcom.commands(checks=[checks.owner_only(handler=owner_only_handler)])
 async def owner(client, message):
     await client.message_create(message.channel, f'My masuta is {client.owner:f} !')
-#--
+
+
+# --
 
 @Bcom.commands
 async def nani(client, message, entity: ('user', 'channel', 'role') = None):
@@ -52,30 +51,27 @@ async def nani(client, message, entity: ('user', 'channel', 'role') = None):
         result = 'That thing is a channel'
     else:
         result = 'That thing is a role'
-    
+
     await client.message_create(message.channel, result)
 
-@Bcom.commands
-async def ping(client, message):
-    """gibs the ping ofc"""
-    await client.message_create(message.channel, f'Ping is {client.gateway.latency*1000.:.0f} ms')
 
 @Bcom.commands
 async def av(client, message, user: FlaggedAnnotation('user', ConverterFlag.user_all) = None):
     """Gibs the avatar of the user\nUsage: ``n!av [user]``"""
     if user is None:
         user = message.author
-    
+
     if user.avatar:
-        color = user.avatar_hash&0xffffff
+        color = user.avatar_hash & 0xffffff
     else:
         color = user.default_avatar.color
-    
+
     url = user.avatar_url_as(size=4096)
     embed = Embed(f'{user:f}\'s avatar', color=color, url=url)
     embed.add_image(url)
-    
+
     await client.message_create(message.channel, embed=embed)
+
 
 @Bcom.commands
 async def separate(client, message, sep, *args):
@@ -86,12 +82,15 @@ async def separate(client, message, sep, *args):
         result = f" {sep} ".join(args)
     await client.message_create(message.channel, result)
 
+
 @Bcom.commands
-async def owo(client,msg,text):
+async def owo(client, msg, text):
     """owofies your text\nyou might not see the difference in short text"""
+
     def replace(s, old, new):
         li = s.rsplit(old, 1)
         return new.join(li)
+
     vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']
     text = text.replace('L', 'W').replace('l', 'w')
     text = text.replace('R', 'W').replace('r', 'w')
@@ -99,15 +98,15 @@ async def owo(client,msg,text):
     text = replace(text, '!', f'! {random.choice(smileys)}')
     text = replace(text, '?', '? owo')
     text = replace(text, '.', f'. {random.choice(smileys)}')
-    for v in vowels: 
-        if 'n{v}'  in text:
+    for v in vowels:
+        if 'n{v}' in text:
             text = text.replace(f'n{v}', f'ny{v}')
         if 'N{V}' in text:
             text = text.replace(f'N{v}', f"N{'Y' if v.isupper() else 'y', v}")
     await client.message_create(msg.channel, text)
-    
+
+
 @Bcom.commands(separator='|')
 async def choose(client, message, *args):
     """lets the bot choose between two or more things use ``|`` to separate choices"""
     await client.message_create(message.channel, f'I choose {random.choice(args)}')
-    
