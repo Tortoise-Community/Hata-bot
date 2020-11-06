@@ -6,21 +6,24 @@ from hata.ext.commands.command import checks
 class wrapper:
     def commands(self, func=None, **kwargs):
         if func is None:
-            return self.wrap(**kwargs)
-        return self.wrap(**kwargs)(func)
+            return self.wrap('w', **kwargs)
+        return self.wrap('w', **kwargs)(func)
 
-    def wrap(self, **kwargs):
+    def wrap(self, m, **kwargs):
         def addfunc(func):
             for client in CLIENTS:
-                client.commands(**kwargs)(func)
+                if m == 'w':
+                    client.commands(**kwargs)(func)
+                elif m == 'e':
+                    client.events(**kwargs)(func)
             return func
 
         return addfunc
 
-    def events(self, func, *args, **kwargs):
-        for client in CLIENTS:
-            client.events(*args, **kwargs)(func)
-        return func
+    def events(self, func=None, **kwargs):
+        if func is None:
+            return self.wrap('e', **kwargs)
+        return self.wrap('e', **kwargs)(func)
 
 
 async def owneronly(client: Client, message: Message, *args, **kwargs):
