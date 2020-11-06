@@ -11,16 +11,18 @@ Reimu.name = 'Reimu'
 Bcom = Client(config.BCOM_TOKEN)
 Bcom.name = 'Bcom'
 
-Crambor = Client(config.CRAMBOR_TOKEN)
-Crambor.name = 'Crambor'
+# Crambor = Client(config.CRAMBOR_TOKEN)
+# Crambor.name = 'Crambor'
+
+TO_LOAD = ['bcom', 'reimu', 'common']
 
 CLIENT_CONTEXT = {}
 
 for client in CLIENTS:
     CLIENT_CONTEXT[client.name] = client
 
-for client in CLIENTS:
-    EXTENSION_LOADER.load_extension('bots.' + client.name.lower(), **CLIENT_CONTEXT)
+for path in TO_LOAD:
+        EXTENSION_LOADER.load_extension('bots.' + path, **CLIENT_CONTEXT)
 
 EXTENSIONS = []
 
