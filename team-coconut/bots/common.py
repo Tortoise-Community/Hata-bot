@@ -4,6 +4,7 @@ from utils.utils import ALL, owneronly
 
 Reimu: Client
 Bcom: Client
+Astra: Client
 
 
 @ALL.events
@@ -18,6 +19,7 @@ async def message_create(client: Client, message: Message):
             message.author.is_bot = True
     if message.author.is_bot:
         return
+
 
 @ALL.events
 async def ready(client):
