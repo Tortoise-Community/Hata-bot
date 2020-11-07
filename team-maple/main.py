@@ -166,6 +166,25 @@ def build_potato_embed(exploding_at: float) -> Embed:
 	return embed
 
 
+async def message_create(client: Client, message: Message):
+	if not message.embeds:
+		return
+
+	if message.embeds[0].title == 'Hot Potato':
+		info = next(info for info in CLIENT_INFO.values() if info['POTATO_CHANNEL'] == message.channel)
+		other_client = info['CLIENT']
+		if client == other_client:
+			return
+
+		await asyncio.sleep(random.uniform(1.5, 5))
+		# If the potato has exploded or changed message, don't toss
+		if not active_potato or active_potato['message'].id != message.id:
+			return
+
+		msg = await client.message_create(message.channel, '.toss')
+
+		await other_client.command_processer.commands['toss'](other_client, msg, '')
+
 for info in CLIENT_INFO.values():
 	client = info['CLIENT']
 	client.events(ready)
