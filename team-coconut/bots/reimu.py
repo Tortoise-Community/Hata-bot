@@ -1,9 +1,10 @@
 import config
+from databases.shared_data import common_data
 from hata import Client, Message, Guild, ChannelText
 from hata.discord.exceptions import DiscordException
 from hata.ext.commands import setup_ext_commands
 from hata.ext.commands.helps.subterranean import SubterraneanHelpCommand
-from utils.utils import colourfunc
+from utils.utils import colourfunc, send
 
 Reimu: Client
 setup_ext_commands(Reimu, config.REIMU_PREFIX)
@@ -37,13 +38,25 @@ async def getmessage(client: Client, message: Message, msg: ('int', 'str') = Non
     if not isinstance(guild, Guild):
         return await client.message_create(message.channel, 'Unknown Guild')
     if not isinstance(channel, ChannelText):
-        if channel not in guild.channels:
-            return await client.message_create(message.channel, f'Unknown Channel in guild {guild.name}')
-        channel = guild.channels[channel]
+        channel = guild.channels.get(channel)
     if not isinstance(channel, ChannelText):
         return await client.message_create(message.channel, f'Unknown Channel in guild {guild.name}')
     try:
         content = await client.message_get(channel, msg)
     except DiscordException:
         return await client.message_create(message.channel, f'Unknown Message in channel {channel.name}')
+    print(message.author.id)
     await client.message_create(message.channel, content.content)
+
+
+@Reimu.events
+async def message_create(client: Client, message: Message):
+    if message.author.is_bot:
+        return
+    if message.channel.id in common_data:
+        if common_data.get('muted') is None:
+            common_data['muted'] = []
+        if message.content.startswith(client.command_processer.prefix):
+            return
+        if message.author.id not in common_data['muted']:
+            await send(client, common_data[message.channel.id]['webhook'], message)

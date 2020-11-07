@@ -19,7 +19,7 @@ def teardown(lib):
 
 # @MODERATION_COMMANDS.from_class
 # class test:
-#     category = 'ADMINISTRATION'
+#     category = 'MODERATION'
 #
 #     async def command(client: Client, message: Message):
 #         await client.message_create(message.channel, 'Main Client' + client.mention)

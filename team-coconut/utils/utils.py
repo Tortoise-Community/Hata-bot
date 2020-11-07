@@ -1,5 +1,5 @@
 from config import WHITELISTED_OWNERS
-from hata import CLIENTS, Client, Message
+from hata import CLIENTS, Client, Message, Webhook
 from hata.ext.commands.command import checks
 
 
@@ -37,6 +37,10 @@ owneronly = [checks.custom(function=owneronly)]
 
 def colourfunc(client, message, name):
     return message.author.color_at(message.guild)
+
+
+async def send(client: Client, webhook: Webhook, message: Message):
+    await client.webhook_send(webhook, message.content, avatar_url=message.author.avatar_url, name=message.author.name)
 
 
 ALL = wrapper()
