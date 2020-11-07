@@ -28,9 +28,9 @@ def load_client_info() -> Dict[int, ClientInfoDict]:
 			Dict[int, ClientInfoDict]: Mapping of client information dicts
 	"""
 	# TODO - implement error handling based on missing or invalid enviroment values
-	client_ids = [int(token.strip()) for token in os.getenv('CLIENT_IDS').split(',') if token]
-	client_tokens = [token.strip() for token in os.getenv('CLIENT_TOKENS').split(',') if token]
-	potato_channels: List[ChannelText] = [ChannelText.precreate(int(id.strip())) for id in os.getenv('POTATO_CHANNEL_IDS').split(',') if id.strip()]
+	client_ids = [int(token.strip()) for token in (os.getenv('CLIENT_IDS') or '').split(',') if token]
+	client_tokens = [token.strip() for token in (os.getenv('CLIENT_TOKENS') or '').split(',') if token]
+	potato_channels: List[ChannelText] = [ChannelText.precreate(int(id.strip())) for id in (os.getenv('POTATO_CHANNEL_IDS') or '').split(',') if id.strip()]
 
 	info: Dict[int, ClientInfoDict] = {}
 
@@ -50,7 +50,7 @@ CLIENT_INFO = load_client_info()
 # The currently active hot potato
 ActivePotato = TypedDict('ActivePotato', {
 	'channel': ChannelText,
-	'started': float,
+	'exploding_at': float,
 	'client': Client,
 	'message': Message
 })
@@ -63,7 +63,8 @@ async def ready(client: Client):
 	# TODO - output info for client
 	print(f'{client:f} logged in.')
 
-async def potato(client: Client, message: Message, guild: Converter('guild', ConverterFlag.guild_default, default_code='message.guild')) -> Any:
+# TODO - ensure guild always exists - if used in DMs, guild must be provided, otherwise allow guild to be optional and use message guild
+async def potato(client: Client, message: Message, guild: Converter(Guild, ConverterFlag.guild_default, default_code='message.guild')) -> Any:
 	"""Start a game of start potato
 
 	Uses the current or provided guild.
@@ -85,31 +86,32 @@ async def potato(client: Client, message: Message, guild: Converter('guild', Con
 	channel = info['POTATO_CHANNEL']
 
 
-	started = time.time()
+	exploding_at = time.time() + POTATO_DURATION
 
-	potato_msg = await other_client.message_create(channel, embed=build_potato_embed(started))
+	potato_msg = await other_client.message_create(channel, embed=build_potato_embed(exploding_at))
 	assert potato_msg
 
 	active_potato = {
 		'channel': channel,
-		'started': started,
+		'exploding_at': exploding_at,
 		'client': other_client,
 		'message': potato_msg
 	}
-	return asyncio.create_task(potato_countdown(POTATO_DURATION))
+	return asyncio.create_task(potato_countdown())
 
-async def potato_countdown(duration):
+async def potato_countdown():
 	"""Wait to explode potato"""
 	global active_potato
+	assert active_potato
 
 	# Update message every POTATO_UPDATE_RATE, or don't if it's not set
 	if POTATO_UPDATE_RATE:
-		exploding_at: float = time.time() + duration
+		exploding_at = active_potato['exploding_at']
 		while time.time() < exploding_at:
 			await asyncio.sleep(POTATO_UPDATE_RATE)
-			await active_potato['client'].message_edit(active_potato['message'], embed=build_potato_embed(active_potato['started']))
+			await active_potato['client'].message_edit(active_potato['message'], embed=build_potato_embed(active_potato['exploding_at']))
 	else:
-		await asyncio.sleep(duration)
+		await asyncio.sleep(active_potato['exploding_at'] - time.time())
 
 
 	assert active_potato
@@ -122,9 +124,12 @@ async def toss(client: Client, message: Message) -> Any:
 	# Don't toss if there is no active potato or the potato is not in the current channel
 	if not active_potato or active_potato['channel'] != message.channel:
 		return await client.message_create(message.channel, 'There is no potato here')
+	if active_potato['exploding_at'] < time.time():
+		return await client.message_create(message.channel, 'Potato *just* exploded!')
 
 	# Send potato to any other potato channel, but prefer channels not in the current guild
 	pool = [info for info in CLIENT_INFO.values() if info['POTATO_CHANNEL'] != message.channel]
+	# TODO - guard against channel.guild being None
 	foreign_pool = [info for info in pool if info['POTATO_CHANNEL'].guild != message.channel.guild]
 	if foreign_pool:
 		pool = foreign_pool
@@ -137,21 +142,25 @@ async def toss(client: Client, message: Message) -> Any:
 	active_potato['channel'] = channel
 	active_potato['client'] = other_client
 
-	potato_msg = await other_client.message_create(channel, embed=build_potato_embed(active_potato['started']))
+	potato_msg = await other_client.message_create(channel, embed=build_potato_embed(active_potato['exploding_at']))
 	assert potato_msg
-	await client.message_delete(active_potato['message'])
+
+	# Store and delete after assigning new message in case potato is about to explode
+	old_potato_msg = active_potato['message']
 	active_potato['message'] = potato_msg
 
-def build_potato_embed(started: float) -> Embed:
+	await client.message_delete(old_potato_msg)
+
+def build_potato_embed(exploding_at: float) -> Embed:
 	"""Build potato message embed
 
 	Args:
-			started (float): When the potato was created
+			exploding_at (float): When the potato was created
 
 	Returns:
 			Embed: Potato message embed
 	"""
-	embed = Embed('Hot Potato', 'You have the hot potato, which only has {:.2f} seconds before it explodes!'.format(POTATO_DURATION - (time.time() - started)))
+	embed = Embed('Hot Potato', 'You have the hot potato, which only has {:.2f} seconds before it explodes!'.format(exploding_at - time.time()))
 	embed.footer = EmbedFooter('Use `.toss` to get rid of it!')
 	embed.color = Color.from_html('#B79268')
 	return embed
