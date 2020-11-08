@@ -3,8 +3,7 @@ import time
 
 from dotenv import load_dotenv
 load_dotenv()
-from hata.discord.client_core import KOKORO
-from hata.discord import start_clients, stop_clients, Client
+from hata.discord import KOKORO, start_clients, stop_clients, Client
 
 
 from config import CLIENT_INFO

@@ -3,9 +3,9 @@ import random
 from typing import TypedDict, Optional, Any
 
 
-from hata.discord import Client, Message, Guild, Color, Embed, EmbedFooter, ChannelText
+from hata.discord import KOKORO, Client, Message, Guild, Color, Embed, EmbedFooter, ChannelText
 from hata.ext.commands import checks, Converter, ConverterFlag
-import hata.ext.asyncio as asyncio
+from hata.backend import Lock, sleep
 
 
 from config import CLIENT_INFO, ClientInfoDict
@@ -14,6 +14,8 @@ from config import CLIENT_INFO, ClientInfoDict
 
 POTATO_DURATION = 15
 POTATO_UPDATE_RATE = 2.5
+POTATO_TOSS_MIN = 1.5
+POTATO_TOSS_MAX = 5
 
 # The currently active hot potato
 ActivePotato = TypedDict('ActivePotato', {
@@ -23,7 +25,7 @@ ActivePotato = TypedDict('ActivePotato', {
 	'message': Message
 })
 active_potato: Optional[ActivePotato] = None
-potato_lock = asyncio.Lock()
+potato_lock = Lock(KOKORO)
 
 
 # TODO - ensure guild always exists - if used in DMs, guild must be provided, otherwise allow guild to be optional and use message guild
@@ -33,6 +35,8 @@ async def potato(client: Client, message: Message, guild: Converter(Guild, Conve
 	Uses the current or provided guild.
 	"""
 	global active_potato
+	await client.typing(message.channel)
+
 	# Prevent spawning if there's already a hot potato active
 	if active_potato:
 		return await client.message_create(message.channel, 'Potato already in play')
@@ -60,7 +64,7 @@ async def potato(client: Client, message: Message, guild: Converter(Guild, Conve
 		'client': other_client,
 		'message': potato_msg
 	}
-	return asyncio.create_task(potato_countdown())
+	return KOKORO.create_task(potato_countdown())
 
 async def potato_countdown():
 	"""Wait to explode potato"""
@@ -71,11 +75,11 @@ async def potato_countdown():
 	if POTATO_UPDATE_RATE:
 		exploding_at = active_potato['exploding_at']
 		while time.time() < exploding_at:
-			await asyncio.sleep(POTATO_UPDATE_RATE)
+			await sleep(POTATO_UPDATE_RATE)
 			async with potato_lock:
 				await active_potato['client'].message_edit(active_potato['message'], embed=build_potato_embed(active_potato['exploding_at']))
 	else:
-		await asyncio.sleep(active_potato['exploding_at'] - time.time())
+		await sleep(active_potato['exploding_at'] - time.time())
 
 	assert active_potato
 	await active_potato['client'].message_edit(active_potato['message'], 'Potato Exploded!', embed=None)
@@ -84,6 +88,8 @@ async def potato_countdown():
 async def toss(client: Client, message: Message) -> Any:
 	"""Toss hot potato from current guild to another one"""
 	global active_potato
+	await client.typing(message.channel)
+
 	# Don't toss if there is no active potato or the potato is not in the current channel
 	if not active_potato or active_potato['channel'] != message.channel:
 		return await client.message_create(message.channel, 'There is no potato here')
@@ -141,11 +147,12 @@ async def message_create(client: Client, message: Message):
 		if client == other_client:
 			return
 
-		await asyncio.sleep(random.uniform(1.5, 5))
+		await sleep(random.uniform(POTATO_TOSS_MIN, POTATO_TOSS_MAX))
 		# If the potato has exploded or changed message, don't toss
 		if not active_potato or active_potato['message'].id != message.id:
 			return
 
+		await client.typing(message.channel)
 		msg = await client.message_create(message.channel, '.toss')
 
 		await other_client.command_processer.commands['toss'](other_client, msg, '')
@@ -153,6 +160,7 @@ async def message_create(client: Client, message: Message):
 
 def setup(client: Client, info: 'ClientInfoDict'):
 	client.events(message_create)
-	# TODO - look into better way to constrain commands in channel
-	client.commands(checks=[checks.is_channel(info['POTATO_CHANNEL'])])(toss)
-	client.commands(checks=[checks.is_channel(info['POTATO_CHANNEL'])])(potato)
+
+	potato_channel_check = checks.is_channel(info['POTATO_CHANNEL'])
+	client.commands(checks=[potato_channel_check])(toss)
+	client.commands(checks=[potato_channel_check])(potato)
