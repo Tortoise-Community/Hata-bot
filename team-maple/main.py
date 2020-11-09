@@ -1,4 +1,5 @@
 import time
+import os
 
 
 from dotenv import load_dotenv
@@ -20,13 +21,13 @@ if __name__ == '__main__':
 	for client in CLIENTS:
 		client.events(ready)
 
-	for extension_name in ('hot_potato', 'misc'):
-		EXTENSION_LOADER.load_extension(extension_name)
+	for extension_name in [filename for filename in os.listdir('extensions') if filename.endswith('.py')]:
+		EXTENSION_LOADER.add('extensions.' + extension_name[:-3])
+	EXTENSION_LOADER.load_all()
 
 	print('Connecting...')
 	start_clients()
 	try:
-		import time
 		time.sleep(2000.5)
 	except KeyboardInterrupt:
 		stop_clients()
