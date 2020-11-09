@@ -1,15 +1,14 @@
 import time
 import random
-from typing import TYPE_CHECKING, TypedDict, Optional, Any
+from typing import TypedDict, Optional, Any
 from types import ModuleType
 
-from hata.discord import KOKORO, Client, Message, Guild, Color, Embed, EmbedFooter, ChannelText
+from hata.discord import KOKORO, CLIENTS, Message, Guild, Color, Embed, EmbedFooter, ChannelText
 from hata.ext.commands import checks, Converter, ConverterFlag
 from hata.backend import Lock, sleep
 
 
-if TYPE_CHECKING:
-	from config import CLIENT_INFO
+from config import MapleClient
 
 
 
@@ -22,7 +21,7 @@ POTATO_TOSS_MAX = 5
 ActivePotato = TypedDict('ActivePotato', {
 	'channel': ChannelText,
 	'exploding_at': float,
-	'client': Client,
+	'client': MapleClient,
 	'message': Message
 })
 active_potato: Optional[ActivePotato] = None
@@ -30,7 +29,7 @@ potato_lock = Lock(KOKORO)
 
 
 # TODO - ensure guild always exists - if used in DMs, guild must be provided, otherwise allow guild to be optional and use message guild
-async def potato(client: Client, message: Message, guild: Converter(Guild, ConverterFlag.guild_default, default_code='message.guild')) -> Any:
+async def potato(client: MapleClient, message: Message, guild: Converter(Guild, ConverterFlag.guild_default, default_code='message.guild')) -> Any:
 	"""Start a game of start potato
 
 	Uses the current or provided guild.
@@ -44,14 +43,13 @@ async def potato(client: Client, message: Message, guild: Converter(Guild, Conve
 
 	# Get client with provided guild
 	if guild != message.guild:
-		info = next((info for info in CLIENT_INFO.values() if info['POTATO_CHANNEL'].guild == guild), None)
-		if not info:
+		other_client = next((other_client for other_client in CLIENTS if other_client.potato_channel.guild == guild), None)
+		if not other_client:
 			return await client.message_create(message.channel, 'Guild is not playing hot potato')
 	else:
-		info = CLIENT_INFO[client.id]
+		other_client = client
 
-	other_client = info['CLIENT']
-	channel = info['POTATO_CHANNEL']
+	channel = other_client.potato_channel
 
 
 	exploding_at = time.time() + POTATO_DURATION
@@ -86,7 +84,7 @@ async def potato_countdown():
 	await active_potato['client'].message_edit(active_potato['message'], 'Potato Exploded!', embed=None)
 	active_potato = None
 
-async def toss(client: Client, message: Message) -> Any:
+async def toss(client: MapleClient, message: Message) -> Any:
 	"""Toss hot potato from current guild to another one"""
 	global active_potato
 	await client.typing(message.channel)
@@ -99,16 +97,14 @@ async def toss(client: Client, message: Message) -> Any:
 
 	# Send potato to any other potato channel, but prefer channels not in the current guild
 	async with potato_lock:
-		pool = [info for info in CLIENT_INFO.values() if info['POTATO_CHANNEL'] != message.channel]
+		pool = [other_client for other_client in CLIENTS if other_client.potato_channel != message.channel]
 		# TODO - guard against channel.guild being None
-		foreign_pool = [info for info in pool if info['POTATO_CHANNEL'].guild != message.channel.guild]
+		foreign_pool = [other_client for other_client in pool if other_client.potato_channel.guild != message.channel.guild]
 		if foreign_pool:
 			pool = foreign_pool
-		info = random.choice(pool)
+		other_client = random.choice(pool)
 
-
-		other_client = info['CLIENT']
-		channel = info['POTATO_CHANNEL']
+		channel = other_client.potato_channel
 
 		active_potato['channel'] = channel
 		active_potato['client'] = other_client
@@ -138,13 +134,12 @@ def build_potato_embed(exploding_at: float) -> Embed:
 	return embed
 
 
-async def message_create(client: Client, message: Message):
+async def message_create(client: MapleClient, message: Message):
 	if not message.embeds:
 		return
 
 	if message.embeds[0].title == 'Hot Potato':
-		info = next(info for info in CLIENT_INFO.values() if info['POTATO_CHANNEL'] == message.channel)
-		other_client = info['CLIENT']
+		other_client = next(other_client for other_client in CLIENTS if other_client.potato_channel == message.channel)
 		if client == other_client:
 			return
 
@@ -160,10 +155,9 @@ async def message_create(client: Client, message: Message):
 
 
 def setup(_: ModuleType):
-	for info in CLIENT_INFO.values():
-		client = info['CLIENT']
+	for client in CLIENTS:
 		client.events(message_create)
 
-		potato_channel_check = checks.is_channel(info['POTATO_CHANNEL'])
+		potato_channel_check = checks.is_channel(client.potato_channel)
 		client.commands(checks=[potato_channel_check])(toss)
 		client.commands(checks=[potato_channel_check])(potato)

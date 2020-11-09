@@ -3,26 +3,25 @@ import time
 
 from dotenv import load_dotenv
 load_dotenv()
-from hata.discord import KOKORO, start_clients, stop_clients, Client
+from hata.discord import KOKORO, CLIENTS, start_clients, stop_clients
 from hata.ext.extension_loader import EXTENSION_LOADER
 
 
-from config import CLIENT_INFO
+from config import create_clients, MapleClient
 
 
 
-async def ready(client: Client):
+async def ready(client: MapleClient):
 	# TODO - output info for client
 	print(f'{client:f} logged in.')
 
 if __name__ == '__main__':
-	EXTENSION_LOADER.add_default_variables(CLIENT_INFO=CLIENT_INFO)
-	for info in CLIENT_INFO.values():
-		client = info['CLIENT']
+	create_clients()
+	for client in CLIENTS:
 		client.events(ready)
 
-		for extension_name in ('hot_potato', 'misc'):
-			EXTENSION_LOADER.load_extension(extension_name)
+	for extension_name in ('hot_potato', 'misc'):
+		EXTENSION_LOADER.load_extension(extension_name)
 
 	print('Connecting...')
 	start_clients()

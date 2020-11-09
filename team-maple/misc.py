@@ -1,18 +1,17 @@
-from typing import List, cast, TYPE_CHECKING
+from typing import List, cast
 from types import ModuleType
 
 
-from hata.discord import Client, Message, MessageIterator
+from hata.discord import Message, MessageIterator, CLIENTS
 
 
-if TYPE_CHECKING:
-	from config import CLIENT_INFO
+from config import MapleClient
 
 
 
 clearing = set()
 
-async def cleartext(client: Client, message: Message):
+async def cleartext(client: MapleClient, message: Message):
 	"""Clear all text in current channel"""
 	if message.id in clearing:
 		return
@@ -30,5 +29,5 @@ async def cleartext(client: Client, message: Message):
 		clearing.remove(message.id)
 
 def setup(_: ModuleType):
-	for info in CLIENT_INFO.values():
-		info['CLIENT'].commands(cleartext)
+	for client in CLIENTS:
+		client.commands(cleartext)
