@@ -8,8 +8,8 @@ from hata.discord import Message, MessageIterator, CLIENTS
 from config import MapleClient
 
 
-
 clearing = set()
+
 
 async def cleartext(client: MapleClient, message: Message):
 	"""Clear all text in current channel"""
@@ -27,6 +27,7 @@ async def cleartext(client: MapleClient, message: Message):
 		await client.message_delete_multiple(messages)
 
 		clearing.remove(message.id)
+
 
 def setup(_: ModuleType):
 	for client in CLIENTS:

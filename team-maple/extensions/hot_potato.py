@@ -11,7 +11,6 @@ from hata.backend import Lock, sleep
 from config import MapleClient
 
 
-
 POTATO_DURATION = 15
 POTATO_UPDATE_RATE = 2.5
 POTATO_TOSS_MIN = 1.5
@@ -28,8 +27,13 @@ active_potato: Optional[ActivePotato] = None
 potato_lock = Lock(KOKORO)
 
 
-# TODO - ensure guild always exists - if used in DMs, guild must be provided, otherwise allow guild to be optional and use message guild
-async def potato(client: MapleClient, message: Message, guild: Converter(Guild, ConverterFlag.guild_default, default_code='message.guild')) -> Any:
+# TODO - ensure guild always exists - if used in DMs,
+# guild must be provided, otherwise allow guild to be optional and use message guild
+async def potato(
+	client: MapleClient,
+	message: Message,
+	guild: Converter(Guild, ConverterFlag.guild_default, default_code='message.guild')
+) -> Any:
 	"""Start a game of start potato
 
 	Uses the current or provided guild.
@@ -51,7 +55,6 @@ async def potato(client: MapleClient, message: Message, guild: Converter(Guild, 
 
 	channel = other_client.potato_channel
 
-
 	exploding_at = time.time() + POTATO_DURATION
 
 	potato_msg = await other_client.message_create(channel, embed=build_potato_embed(exploding_at))
@@ -65,6 +68,7 @@ async def potato(client: MapleClient, message: Message, guild: Converter(Guild, 
 	}
 	return KOKORO.create_task(potato_countdown())
 
+
 async def potato_countdown():
 	"""Wait to explode potato"""
 	global active_potato
@@ -76,13 +80,18 @@ async def potato_countdown():
 		while time.time() < exploding_at:
 			await sleep(POTATO_UPDATE_RATE)
 			async with potato_lock:
-				await active_potato['client'].message_edit(active_potato['message'], embed=build_potato_embed(active_potato['exploding_at']))
+				# TODO - handle if the potato message gets deleted
+				await active_potato['client'].message_edit(
+					active_potato['message'],
+					embed=build_potato_embed(active_potato['exploding_at'])
+				)
 	else:
 		await sleep(active_potato['exploding_at'] - time.time())
 
 	assert active_potato
 	await active_potato['client'].message_edit(active_potato['message'], 'Potato Exploded!', embed=None)
 	active_potato = None
+
 
 async def toss(client: MapleClient, message: Message) -> Any:
 	"""Toss hot potato from current guild to another one"""
@@ -119,6 +128,7 @@ async def toss(client: MapleClient, message: Message) -> Any:
 
 		await client.message_delete(old_potato_msg)
 
+
 def build_potato_embed(exploding_at: float) -> Embed:
 	"""Build potato message embed
 
@@ -128,7 +138,12 @@ def build_potato_embed(exploding_at: float) -> Embed:
 	Returns:
 			Embed: Potato message embed
 	"""
-	embed = Embed('Hot Potato', 'You have the hot potato, which only has {:.2f} seconds before it explodes!'.format(exploding_at - time.time()))
+	embed = Embed(
+		'Hot Potato',
+		'You have the hot potato, which only has '
+		'{:.2f} seconds before it explodes!'
+		.format(exploding_at - time.time())
+	)
 	embed.footer = EmbedFooter('Use `.toss` to get rid of it!')
 	embed.color = Color.from_html('#B79268')
 	return embed

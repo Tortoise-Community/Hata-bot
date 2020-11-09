@@ -2,14 +2,11 @@ import time
 import os
 
 
-from dotenv import load_dotenv
-load_dotenv()
 from hata.discord import KOKORO, CLIENTS, start_clients, stop_clients
 from hata.ext.extension_loader import EXTENSION_LOADER
 
 
 from config import create_clients, MapleClient
-
 
 
 async def ready(client: MapleClient):
