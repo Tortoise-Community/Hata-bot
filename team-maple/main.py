@@ -4,11 +4,10 @@ import time
 from dotenv import load_dotenv
 load_dotenv()
 from hata.discord import KOKORO, start_clients, stop_clients, Client
+from hata.ext.extension_loader import EXTENSION_LOADER
 
 
 from config import CLIENT_INFO
-from misc import setup as setup_misc
-from hot_potato import setup as setup_hot_potato
 
 
 
@@ -17,11 +16,13 @@ async def ready(client: Client):
 	print(f'{client:f} logged in.')
 
 if __name__ == '__main__':
+	EXTENSION_LOADER.add_default_variables(CLIENT_INFO=CLIENT_INFO)
 	for info in CLIENT_INFO.values():
 		client = info['CLIENT']
 		client.events(ready)
-		setup_hot_potato(client, info)
-		setup_misc(client, info)
+
+		for extension_name in ('hot_potato', 'misc'):
+			EXTENSION_LOADER.load_extension(extension_name)
 
 	print('Connecting...')
 	start_clients()

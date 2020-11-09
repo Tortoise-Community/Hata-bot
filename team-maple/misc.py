@@ -1,10 +1,12 @@
-from typing import List, cast
+from typing import List, cast, TYPE_CHECKING
+from types import ModuleType
 
 
 from hata.discord import Client, Message, MessageIterator
 
 
-from config import ClientInfoDict
+if TYPE_CHECKING:
+	from config import CLIENT_INFO
 
 
 
@@ -27,5 +29,6 @@ async def cleartext(client: Client, message: Message):
 
 		clearing.remove(message.id)
 
-def setup(client: Client, info: 'ClientInfoDict'):
-	client.commands(cleartext)
+def setup(_: ModuleType):
+	for info in CLIENT_INFO.values():
+		info['CLIENT'].commands(cleartext)

@@ -1,14 +1,15 @@
 import time
 import random
-from typing import TypedDict, Optional, Any
-
+from typing import TYPE_CHECKING, TypedDict, Optional, Any
+from types import ModuleType
 
 from hata.discord import KOKORO, Client, Message, Guild, Color, Embed, EmbedFooter, ChannelText
 from hata.ext.commands import checks, Converter, ConverterFlag
 from hata.backend import Lock, sleep
 
 
-from config import CLIENT_INFO, ClientInfoDict
+if TYPE_CHECKING:
+	from config import CLIENT_INFO
 
 
 
@@ -158,9 +159,11 @@ async def message_create(client: Client, message: Message):
 		await other_client.command_processer.commands['toss'](other_client, msg, '')
 
 
-def setup(client: Client, info: 'ClientInfoDict'):
-	client.events(message_create)
+def setup(_: ModuleType):
+	for info in CLIENT_INFO.values():
+		client = info['CLIENT']
+		client.events(message_create)
 
-	potato_channel_check = checks.is_channel(info['POTATO_CHANNEL'])
-	client.commands(checks=[potato_channel_check])(toss)
-	client.commands(checks=[potato_channel_check])(potato)
+		potato_channel_check = checks.is_channel(info['POTATO_CHANNEL'])
+		client.commands(checks=[potato_channel_check])(toss)
+		client.commands(checks=[potato_channel_check])(potato)
