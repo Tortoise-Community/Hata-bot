@@ -37,19 +37,27 @@ KNOCK_KNOCK_JOKES = [
 	["Amarillo", "Amarillo nice guy."]
 ]
 
+START_MESSAGE = 'Knock Knock'
+WHO_MESSAGE = "Who's there?"
+BLANK_WHO_TEMPLATE = '{} who?'
+
 
 joke_tellers: Set[int] = set()
 jokes_responded_to: Set[int] = set()
 
 
 async def message_create(client: MapleClient, message: Message):
-	if message.id in jokes_responded_to or client.id == message.author.id or 'knock knock' not in message.content.lower():
+	if (
+		message.id in jokes_responded_to
+		or client.id == message.author.id
+		or START_MESSAGE.lower() not in message.content.lower()
+	):
 		return
 
 	jokes_responded_to.add(message.id)
 
 	await client.human_delay(message.channel)
-	await client.message_create(message.channel, "Who's there?")
+	await client.message_create(message.channel, WHO_MESSAGE)
 
 	try:
 		# Wait for first part of joke from original joke teller
@@ -61,7 +69,7 @@ async def message_create(client: MapleClient, message: Message):
 		)
 
 		await client.human_delay(message.channel)
-		await client.message_create(message.channel, '{} who?'.format(msg.content))
+		await client.message_create(message.channel, BLANK_WHO_TEMPLATE.format(msg.content))
 		# Wait for punchline of joke from original joke teller
 		msg = await utils.wait_for_message(
 			client,
@@ -85,14 +93,14 @@ async def knock_knock(client: MapleClient, message: Message):
 	joke_tellers.add(message.id)
 
 	joke_setup, joke_punchline = random.choice(KNOCK_KNOCK_JOKES)
-	await client.message_create(message.channel, 'Knock Knock')
+	await client.message_create(message.channel, START_MESSAGE)
 
 	try:
 		# Wait for anybody to say "Who's there?"
 		await utils.wait_for_message(
 			client,
 			message.channel,
-			lambda msg: msg.content.lower() == "who's there?",
+			lambda msg: msg.content.lower() == WHO_MESSAGE.lower(),
 			JOKE_RESPONSE_TIMEOUT
 		)
 
@@ -103,7 +111,7 @@ async def knock_knock(client: MapleClient, message: Message):
 		await utils.wait_for_message(
 			client,
 			message.channel,
-			lambda msg: msg.content.lower() == "{} who?".format(joke_setup).lower(),
+			lambda msg: msg.content.lower() == BLANK_WHO_TEMPLATE.format(joke_setup).lower(),
 			JOKE_RESPONSE_TIMEOUT
 		)
 

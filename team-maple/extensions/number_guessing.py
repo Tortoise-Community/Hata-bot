@@ -14,6 +14,14 @@ from config import MapleClient
 
 GUESS_WAIT_TIMEOUT = 15
 
+START_TEMPLATE = ["I'm thinking of a number between ", " and "]
+INCORRECT_TEMPLATE = 'Too {}'
+CORRECT_TEMPLATE = '{:m} guessed my number in {} guesses!'
+
+TOO_LOW_KEYWORD = 'low'
+TOO_HIGH_KEYWORD = 'high'
+CORRECT_KEYWORD = 'guessed'
+
 
 def is_msg_numeric(msg: Message):
 	try:
@@ -30,14 +38,14 @@ async def message_create(client: MapleClient, message: Message):
 	if (
 		message.id in guessing
 		or client.id == message.author.id
-		or not message.content.lower().startswith("i'm thinking of a number between")
+		or not message.content.lower().startswith(START_TEMPLATE[0].lower())
 	):
 		return
 	guessing.add(message.id)
 
 	lowest, highest = [
 		int(part.strip())
-		for part in message.content.split('between')[1].strip().split(' and ')
+		for part in message.content.lower().split(START_TEMPLATE[0].lower())[1].strip().split(START_TEMPLATE[1].lower())
 	]
 	attempted = []
 	try:
@@ -55,12 +63,12 @@ async def message_create(client: MapleClient, message: Message):
 				lambda msg: msg.author.id == message.author.id,
 				GUESS_WAIT_TIMEOUT
 			)
-			if 'guessed' in msg.content.lower():
+			if CORRECT_KEYWORD.lower() in msg.content.lower():
 				break
 
-			if 'low' in msg.content.lower():
+			if TOO_LOW_KEYWORD.lower() in msg.content.lower():
 				lowest = attempted[-1]
-			elif 'high' in msg.content.lower():
+			elif TOO_HIGH_KEYWORD.lower() in msg.content.lower():
 				highest = attempted[-1]
 
 		await client.reaction_add(msg, BUILTIN_EMOJIS['fireworks'])
@@ -80,7 +88,7 @@ async def guess_number(client: MapleClient, message: Message, lowest: int = 1, h
 	number = random.randint(lowest, highest)
 	await client.message_create(
 		message.channel,
-		"I'm thinking of a number between {} and {}".format(lowest, highest)
+		str(lowest).join(START_TEMPLATE) + str(highest)
 	)
 
 	try:
@@ -95,13 +103,13 @@ async def guess_number(client: MapleClient, message: Message, lowest: int = 1, h
 			await client.human_delay(message.channel)
 			await client.message_create(
 				message.channel,
-				'Too {}'.format('High' if guess > number else 'Low')
+				INCORRECT_TEMPLATE.format(TOO_HIGH_KEYWORD if guess > number else TOO_LOW_KEYWORD)
 			)
 
 		await client.human_delay(message.channel)
 		await client.message_create(
 			message.channel,
-			'{:m} guessed my number in {} guesses!'.format(
+			CORRECT_TEMPLATE.format(
 				msg.author,
 				guesses[msg.author.id]
 			)
