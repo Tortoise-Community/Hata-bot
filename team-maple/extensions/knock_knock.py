@@ -1,5 +1,5 @@
 import random
-from typing import Set
+from typing import Set, List, Tuple
 from types import ModuleType
 
 
@@ -12,29 +12,29 @@ from config import MapleClient
 
 JOKE_RESPONSE_TIMEOUT = 15
 
-KNOCK_KNOCK_JOKES = [
-	["Ashe", "Bless you!"],
-	["Nobel", "No bell, that's why I knocked!"],
-	["Leaf", "Leaf me alone!"],
-	["lettuce", "Lettuce in and you'll find out!"],
-	["Aaron", "Why Aaron you opening the door?"],
-	["Tank", "You're welcome!"],
-	["Hawaii", "I'm fine, Hawaii you?"],
-	["Orange", "Orange you even going to open the door!"],
-	["Gray Z", "Gray Z mixed up kid."],
-	["Who", "Is there an owl in there?"],
-	["Anita", "Anita to borrow a pencil."],
-	["Woo", "Don't get so excited, it's just a joke."],
-	["Figs", "Figs the doorbell, it's broken!"],
-	["Alice", "Alice fair in love and war."],
-	["Annie", "Annie thing you can do, I can do better."],
-	["Yukon", "Yukon say that again!"],
-	["Boo", "Well you don't have to cry about it."],
-	["Theodore", "Theodore is stuck and it won't open!"],
-	["Cher", "Cher would be nice if you opened the door!"],
-	["Amos", "A mosquito bit me!"],
-	["Police", "Police let us in, it's cold out here!"],
-	["Amarillo", "Amarillo nice guy."]
+KNOCK_KNOCK_JOKES: List[Tuple[str, str]] = [
+	("Ashe", "Bless you!"),
+	("Nobel", "No bell, that's why I knocked!"),
+	("Leaf", "Leaf me alone!"),
+	("lettuce", "Lettuce in and you'll find out!"),
+	("Aaron", "Why Aaron you opening the door?"),
+	("Tank", "You're welcome!"),
+	("Hawaii", "I'm fine, Hawaii you?"),
+	("Orange", "Orange you even going to open the door!"),
+	("Gray Z", "Gray Z mixed up kid."),
+	("Who", "Is there an owl in there?"),
+	("Anita", "Anita to borrow a pencil."),
+	("Woo", "Don't get so excited, it's just a joke."),
+	("Figs", "Figs the doorbell, it's broken!"),
+	("Alice", "Alice fair in love and war."),
+	("Annie", "Annie thing you can do, I can do better."),
+	("Yukon", "Yukon say that again!"),
+	("Boo", "Well you don't have to cry about it."),
+	("Theodore", "Theodore is stuck and it won't open!"),
+	("Cher", "Cher would be nice if you opened the door!"),
+	("Amos", "A mosquito bit me!"),
+	("Police", "Police let us in, it's cold out here!"),
+	("Amarillo", "Amarillo nice guy.")
 ]
 
 START_MESSAGE = 'Knock Knock'
@@ -47,6 +47,7 @@ jokes_responded_to: Set[int] = set()
 
 
 async def message_create(client: MapleClient, message: Message):
+	# If joke already handled, is self, or not a knock knock prompt, return
 	if (
 		message.id in jokes_responded_to
 		or client.id == message.author.id
@@ -56,30 +57,32 @@ async def message_create(client: MapleClient, message: Message):
 
 	jokes_responded_to.add(message.id)
 
+	# Ask who
 	await client.human_delay(message.channel)
 	await client.message_create(message.channel, WHO_MESSAGE)
 
 	try:
 		# Wait for first part of joke from original joke teller
-		msg = await utils.wait_for_message(
+		setup_msg = await utils.wait_for_message(
 			client,
 			message.channel,
-			lambda msg: msg.author.id == message.author.id,
+			lambda setup_msg: setup_msg.author.id == message.author.id,
 			JOKE_RESPONSE_TIMEOUT
 		)
 
 		await client.human_delay(message.channel)
-		await client.message_create(message.channel, BLANK_WHO_TEMPLATE.format(msg.content))
+		await client.message_create(message.channel, BLANK_WHO_TEMPLATE.format(setup_msg.content))
+
 		# Wait for punchline of joke from original joke teller
-		msg = await utils.wait_for_message(
+		punch_msg = await utils.wait_for_message(
 			client,
 			message.channel,
-			lambda msg: msg.author.id == message.author.id,
+			lambda punch_msg: punch_msg.author.id == message.author.id,
 			JOKE_RESPONSE_TIMEOUT
 		)
 
 		await client.human_delay()
-		await client.reaction_add(msg, BUILTIN_EMOJIS['laughing'])
+		await client.reaction_add(punch_msg, BUILTIN_EMOJIS['laughing'])
 	except TimeoutError:
 		await client.message_create(message.channel, "Guess I'll never heard the end of that joke...")
 	finally:
@@ -88,6 +91,7 @@ async def message_create(client: MapleClient, message: Message):
 
 async def knock_knock(client: MapleClient, message: Message):
 	"""Tell a knock knock joke"""
+	# Return if already being handled
 	if message.id in joke_tellers:
 		return
 	joke_tellers.add(message.id)
@@ -104,6 +108,7 @@ async def knock_knock(client: MapleClient, message: Message):
 			JOKE_RESPONSE_TIMEOUT
 		)
 
+		# Send joke setup
 		await client.human_delay(message.channel)
 		await client.message_create(message.channel, joke_setup)
 
@@ -115,6 +120,7 @@ async def knock_knock(client: MapleClient, message: Message):
 			JOKE_RESPONSE_TIMEOUT
 		)
 
+		# Send joke punchline
 		await client.human_delay(message.channel)
 		await client.message_create(message.channel, joke_punchline)
 	except TimeoutError:

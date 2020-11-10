@@ -11,8 +11,11 @@ from hata.backend import Lock, sleep
 from config import MapleClient
 
 
+# Time until potato exploded
 POTATO_DURATION = 15
+# How often to update the remaining time on the hot potato message
 POTATO_UPDATE_RATE = 2.5
+# Time to wait before other bots run `.toss`
 POTATO_TOSS_MIN = 1.5
 POTATO_TOSS_MAX = 5
 
@@ -47,6 +50,7 @@ async def potato(
 
 	# Get client with provided guild
 	if guild != message.guild:
+		# Find client that has a potato channel in the provided guild
 		other_client = next((other_client for other_client in CLIENTS if other_client.potato_channel.guild == guild), None)
 		if not other_client:
 			return await client.message_create(message.channel, 'Guild is not playing hot potato')
@@ -93,6 +97,7 @@ async def potato_countdown():
 	active_potato = None
 
 
+# TODO - handle DM usage
 async def toss(client: MapleClient, message: Message) -> Any:
 	"""Toss hot potato from current guild to another one"""
 	global active_potato
@@ -104,10 +109,9 @@ async def toss(client: MapleClient, message: Message) -> Any:
 	if active_potato['exploding_at'] < time.time():
 		return await client.message_create(message.channel, 'Potato *just* exploded!')
 
-	# Send potato to any other potato channel, but prefer channels not in the current guild
+	# Send potato to any other potato channel, but prioritize channels not in the current guild
 	async with potato_lock:
 		pool = [other_client for other_client in CLIENTS if other_client.potato_channel != message.channel]
-		# TODO - guard against channel.guild being None
 		foreign_pool = [other_client for other_client in pool if other_client.potato_channel.guild != message.channel.guild]
 		if foreign_pool:
 			pool = foreign_pool

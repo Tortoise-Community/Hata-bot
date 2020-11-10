@@ -5,37 +5,42 @@ from typing import List, Optional, TYPE_CHECKING
 
 from dotenv import load_dotenv
 from hata.discord import Client, ChannelText
-from hata.ext.commands import setup_ext_commands
+from hata.discord.parsers import EventDescriptor, _EventHandlerManager
+from hata.ext.commands import setup_ext_commands, CommandProcesser
 from hata.backend import KeepType, sleep
 
 load_dotenv()
 
 
-HUMAN_DELAY_RANGE = (1, 5)
+# When delaying, the least and most amount of seconds to wait to appear human
+HUMAN_DELAY_RANGE = (1, 2)
 
 
-@KeepType(Client)
-class MapleClient:
-	def _init(self, potato_channel):
-		self.potato_channel = potato_channel
-		return self
-
-	async def human_delay(self, channel=None):
-		if channel:
-			await self.typing(channel)
-
-		await sleep(random.uniform(*HUMAN_DELAY_RANGE))
-
-
+# Required to make type checkers happy
 if TYPE_CHECKING:
 	class MapleClient(Client):
+		command_processer: CommandProcesser
+		commands: _EventHandlerManager
+		events: EventDescriptor
 		potato_channel: ChannelText
 
-		def _init(self, potato_channel: ChannelText) -> MapleClient:
+		def _init(self, potato_channel: ChannelText) -> 'MapleClient':
 			...
 
 		async def human_delay(self, channel: Optional[ChannelText] = ...) -> None:
 			...
+else:
+	@KeepType(Client)
+	class MapleClient:
+		def _init(self, potato_channel):
+			self.potato_channel = potato_channel
+			return self
+
+		async def human_delay(self, channel=None):
+			if channel:
+				await self.typing(channel)
+
+			await sleep(random.uniform(*HUMAN_DELAY_RANGE))
 
 
 def create_clients() -> None:
