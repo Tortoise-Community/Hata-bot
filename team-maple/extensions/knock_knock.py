@@ -1,13 +1,16 @@
 import random
-from typing import Dict, Tuple
+from typing import Set
 from types import ModuleType
 
 
 from hata.discord import Message, CLIENTS, BUILTIN_EMOJIS
+from hata.ext.commands import utils
 
 
 from config import MapleClient
 
+
+JOKE_RESPONSE_TIMEOUT = 15
 
 KNOCK_KNOCK_JOKES = [
 	["Ashe", "Bless you!"],
@@ -34,56 +37,77 @@ KNOCK_KNOCK_JOKES = [
 	["Amarillo", "Amarillo nice guy."]
 ]
 
-telling: Dict[int, Tuple[int, int]] = {}
-receiving: Dict[int, Tuple[int, int]] = {}
 
-started_responding = False
+joke_tellers: Set[int] = set()
+jokes_responded_to: Set[int] = set()
 
 
 async def message_create(client: MapleClient, message: Message):
-	global started_responding
-	if client.id != message.author.id and 'knock knock' in message.content.lower() and not started_responding:
-		started_responding = True
-		await client.message_create(message.channel, "Who's there?")
-		receiving[client.id] = [message.author.id, 0]
-		started_responding = False
+	if message.id in jokes_responded_to or client.id == message.author.id or 'knock knock' not in message.content.lower():
 		return
 
-	if client.id in receiving:
-		partner, stage = receiving[client.id]
-		if partner != message.author.id:
-			return
-		if stage == 0:
-			await client.message_create(message.channel, '{} who?'.format(message.content))
-			receiving[client.id][1] += 1
-		elif stage == 1:
-			await client.reaction_add(message, BUILTIN_EMOJIS['laughing'])
-			del receiving[client.id]
-	elif client.id in telling:
-		index, stage = telling[client.id]
-		if stage == 0 and message.content.lower() == "who's there?":
-			await client.message_create(message.channel, KNOCK_KNOCK_JOKES[index][0])
-			telling[client.id][1] += 1
-		elif stage == 1 and message.content.lower() == '{} who?'.format(KNOCK_KNOCK_JOKES[index][0].lower()):
-			await client.message_create(message.channel, KNOCK_KNOCK_JOKES[index][1])
-			del telling[client.id]
+	jokes_responded_to.add(message.id)
 
+	await client.message_create(message.channel, "Who's there?")
 
-exclusive_knock_knock = False
+	try:
+		# Wait for first part of joke from original joke teller
+		msg = await utils.wait_for_message(
+			client,
+			message.channel,
+			lambda msg: msg.author.id == message.author.id,
+			JOKE_RESPONSE_TIMEOUT
+		)
+
+		await client.message_create(message.channel, '{} who?'.format(msg.content))
+		# Wait for punchline of joke from original joke teller
+		msg = await utils.wait_for_message(
+			client,
+			message.channel,
+			lambda msg: msg.author.id == message.author.id,
+			JOKE_RESPONSE_TIMEOUT
+		)
+
+		await client.reaction_add(msg, BUILTIN_EMOJIS['laughing'])
+	except TimeoutError:
+		await client.message_create(message.channel, "Guess I'll never heard the end of that joke...")
+	finally:
+		jokes_responded_to.remove(message.id)
 
 
 async def knock_knock(client: MapleClient, message: Message):
 	"""Tell a knock knock joke"""
-	global exclusive_knock_knock
-	if exclusive_knock_knock:
+	if message.id in joke_tellers:
 		return
-	exclusive_knock_knock = True
+	joke_tellers.add(message.id)
 
-	index = random.randrange(len(KNOCK_KNOCK_JOKES))
-	telling[client.id] = [index, 0]
+	joke_setup, joke_punchline = random.choice(KNOCK_KNOCK_JOKES)
 	await client.message_create(message.channel, 'Knock Knock')
 
-	exclusive_knock_knock = False
+	try:
+		# Wait for anybody to say "Who's there?"
+		await utils.wait_for_message(
+			client,
+			message.channel,
+			lambda msg: msg.content.lower() == "who's there?",
+			JOKE_RESPONSE_TIMEOUT
+		)
+
+		await client.message_create(message.channel, joke_setup)
+
+		# Wait for "X who?" question
+		await utils.wait_for_message(
+			client,
+			message.channel,
+			lambda msg: msg.content.lower() == "{} who?".format(joke_setup).lower(),
+			JOKE_RESPONSE_TIMEOUT
+		)
+
+		await client.message_create(message.channel, joke_punchline)
+	except TimeoutError:
+		await client.message_create(message.channel, 'Guess nobody wanted to hear the joke...')
+	finally:
+		joke_tellers.remove(message.id)
 
 
 def setup(_: ModuleType):
