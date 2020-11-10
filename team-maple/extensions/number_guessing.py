@@ -122,14 +122,12 @@ async def guess_number(client: MapleClient, message: Message, lowest: int = 1, h
 			if guess == number:
 				break
 
-			await client.human_delay(message.channel)
 			await client.message_create(
 				message.channel,
 				INCORRECT_TEMPLATE.format(TOO_HIGH_KEYWORD if guess > number else TOO_LOW_KEYWORD)
 			)
 
 		# When guess is correct, output correct template with winner and guess count
-		await client.human_delay(message.channel)
 		await client.message_create(
 			message.channel,
 			CORRECT_TEMPLATE.format(

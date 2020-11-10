@@ -109,7 +109,6 @@ async def knock_knock(client: MapleClient, message: Message):
 		)
 
 		# Send joke setup
-		await client.human_delay(message.channel)
 		await client.message_create(message.channel, joke_setup)
 
 		# Wait for "X who?" question
@@ -121,7 +120,6 @@ async def knock_knock(client: MapleClient, message: Message):
 		)
 
 		# Send joke punchline
-		await client.human_delay(message.channel)
 		await client.message_create(message.channel, joke_punchline)
 	except TimeoutError:
 		await client.message_create(message.channel, 'Guess nobody wanted to hear the joke...')
