@@ -48,6 +48,7 @@ async def message_create(client: MapleClient, message: Message):
 
 	jokes_responded_to.add(message.id)
 
+	await client.human_delay(message.channel)
 	await client.message_create(message.channel, "Who's there?")
 
 	try:
@@ -59,6 +60,7 @@ async def message_create(client: MapleClient, message: Message):
 			JOKE_RESPONSE_TIMEOUT
 		)
 
+		await client.human_delay(message.channel)
 		await client.message_create(message.channel, '{} who?'.format(msg.content))
 		# Wait for punchline of joke from original joke teller
 		msg = await utils.wait_for_message(
@@ -68,6 +70,7 @@ async def message_create(client: MapleClient, message: Message):
 			JOKE_RESPONSE_TIMEOUT
 		)
 
+		await client.human_delay()
 		await client.reaction_add(msg, BUILTIN_EMOJIS['laughing'])
 	except TimeoutError:
 		await client.message_create(message.channel, "Guess I'll never heard the end of that joke...")
@@ -93,6 +96,7 @@ async def knock_knock(client: MapleClient, message: Message):
 			JOKE_RESPONSE_TIMEOUT
 		)
 
+		await client.human_delay(message.channel)
 		await client.message_create(message.channel, joke_setup)
 
 		# Wait for "X who?" question
@@ -103,6 +107,7 @@ async def knock_knock(client: MapleClient, message: Message):
 			JOKE_RESPONSE_TIMEOUT
 		)
 
+		await client.human_delay(message.channel)
 		await client.message_create(message.channel, joke_punchline)
 	except TimeoutError:
 		await client.message_create(message.channel, 'Guess nobody wanted to hear the joke...')
