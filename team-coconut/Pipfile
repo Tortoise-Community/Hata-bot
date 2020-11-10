@@ -7,6 +7,7 @@ verify_ssl = true
 pylint = "*"
 
 [packages]
+pynacl = "*"
 hata = "*"
 
 [requires]
