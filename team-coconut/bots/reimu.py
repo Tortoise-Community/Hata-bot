@@ -1,10 +1,10 @@
 import config
 from databases.shared_data import common_data
-from hata import Client, Message, Guild, ChannelText
+from hata import Client, Message, Guild, ChannelText, VoiceState
 from hata.discord.exceptions import DiscordException
 from hata.ext.commands import setup_ext_commands
 from hata.ext.commands.helps.subterranean import SubterraneanHelpCommand
-from utils.utils import colourfunc, send
+from utils.utils import colourfunc, send, MixerStream
 
 Reimu: Client
 setup_ext_commands(Reimu, config.REIMU_PREFIX)
@@ -60,3 +60,23 @@ async def message_create(client: Client, message: Message):
             return
         if message.author.id not in common_data['muted']:
             await send(client, common_data[message.channel.id]['webhook'], message)
+
+
+@Reimu.events
+async def user_voice_join(client: Client, voice_state: VoiceState):
+    if voice_state.guild.id in common_data.get('CallData', {}).keys():
+        if voice_state.channel == common_data['CallData'][voice_state.guild.id]['SelfChannel']:
+            stream = common_data['CallData'][voice_state.guild.id]['SelfVC'].listen_to(voice_state.user)
+            vc = common_data['CallData'][voice_state.guild.id]['OtherVC']
+            if vc.source is None:
+                vc.append(MixerStream())
+            await vc.source.add(stream)
+
+@Reimu.events
+async def user_voice_leave(client: Client, voice_state: VoiceState):
+    if voice_state.guild.id in common_data.get('CallData', {}).keys():
+        if voice_state.channel == common_data['CallData'][voice_state.guild.id]['SelfChannel']:
+            vc = common_data['CallData'][voice_state.guild.id]['OtherVC']
+            if vc.source is None:
+                return
+            await vc.source.remove(voice_state.user.id)

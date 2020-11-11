@@ -1,7 +1,7 @@
 from databases.shared_data import common_data
 from hata import eventlist, Message, Client, ChannelVoice, ChannelText, ReactionAddEvent, BUILTIN_EMOJIS
 from hata.ext.commands import Command, utils
-from utils.utils import setdefault
+from utils.utils import setdefault, MixerStream
 
 CALL_COMMANDS = eventlist(type_=Command)
 Reimu: Client
@@ -28,8 +28,7 @@ class register:
         voice_client = client.voice_client_for(message)
         if voice_client is None:
             voice_client = message.guild.voice_states.get(message.author.id, None)
-        setdefault(common_data['CallRegisterData'], message.guild.id, {})
-        guild_data = common_data['CallRegisterData'][message.guild.id]
+        guild_data = setdefault(common_data['CallRegisterData'], message.guild.id, {})
         guild_data['VoiceID'] = voice_client.channel.id
         guild_data['ChannelID'] = message.channel.id
         guild_data['UserID'] = message.author.id
@@ -40,7 +39,6 @@ class register:
 
 
 def check(_id, event: ReactionAddEvent):
-    print(_id, event.user.id)
     if _id == event.user.id and event.emoji in [BUILTIN_EMOJIS['white_check_mark'], BUILTIN_EMOJIS['x']]:
         return True
     return False
@@ -71,7 +69,8 @@ class call:
         except TimeoutError:
             await client.reaction_clear(other_message)
             await client.message_create(other_channel, 'Call got timed out')
-            return await client.message_create(message.channel, message.author.mention + ', Your call wasn\'t picked up')
+            return await client.message_create(message.channel,
+                                               message.author.mention + ', Your call wasn\'t picked up')
         if res.emoji == BUILTIN_EMOJIS['white_check_mark']:
             await client.reaction_clear(other_message)
             await client.message_create(other_channel, 'Call Accepted')
@@ -80,6 +79,30 @@ class call:
             await client.reaction_clear(other_message)
             await client.message_create(other_channel, 'Call Declined')
             return await client.message_create(message.channel, message.author.mention + ', Your call was declined')
+
+        vc1 = await client.join_voice_channel(other_voice)
+        vc2 = await client.join_voice_channel(my_voice)
+
+        mixer = MixerStream()
+        for user in other_voice.voice_users:
+            if user is client:
+                continue
+
+            source = vc1.listen_to(user, yield_decoded=True)
+            await mixer.add(source)
+        vc2.append(mixer)
+
+        mixer = MixerStream()
+        for user in other_voice.voice_users:
+            if user is client:
+                continue
+
+            source = vc2.listen_to(user, yield_decoded=True)
+            await mixer.add(source)
+        vc1.append(mixer)
+        data = setdefault(common_data, 'CallData', {})
+        data[message.guild.id] = {'Other': number, 'OtherVC': vc1, 'SelfVC': vc2, 'SelfChannel': my_voice}
+        data[number] = {'Other': message.guild.id, 'OtherVC': vc2, 'SelfVC': vc1, 'SelfChannel': other_voice}
 
 
 @CALL_COMMANDS.from_class

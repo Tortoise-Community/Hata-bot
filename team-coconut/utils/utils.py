@@ -1,3 +1,4 @@
+import audioop
 from audioop import add as add_voice
 
 from config import CORE_GUILD
@@ -101,9 +102,14 @@ class MixerStream(AudioSource):
 
         self.sources.append(source)
 
+    async def remove(self, userid):
+        for source in self.sources[:]:
+            if source.user.id == userid:
+                self.sources.remove(source)
+
     async def read(self):
         sources = self.sources
-        result = None
+        result = b'\x00' * 3840
 
         for index in reversed(range(len(sources))):
             source = sources[index]
@@ -114,12 +120,14 @@ class MixerStream(AudioSource):
                 continue
             if not source.NEEDS_ENCODE:
                 data = self._decoder.decode(data)
-            if result is None:
+            if data == b'\x00' * 3840:
+                continue
+            if result == b'\x00' * 3840:
                 result = data
             else:
                 result = add_voice(result, data, 1)
             continue
-        return result
+        return audioop.mul(result, 1, 0.75)
 
     async def cleanup(self):
         self._postprocess_called = False
@@ -131,6 +139,7 @@ class MixerStream(AudioSource):
 
 def setdefault(_dict, val, default):
     _dict[val] = _dict.get(val, default)
+    return _dict[val]
 
 
 ALL = wrapper()
