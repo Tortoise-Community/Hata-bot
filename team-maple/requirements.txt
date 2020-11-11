@@ -1,2 +1,5 @@
 hata
 dotenv
+opencv-python
+Pillow
+numpy

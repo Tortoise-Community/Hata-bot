@@ -84,7 +84,7 @@ async def message_create(client: MapleClient, message: Message):
 		await client.human_delay()
 		await client.reaction_add(punch_msg, BUILTIN_EMOJIS['laughing'])
 	except TimeoutError:
-		await client.message_create(message.channel, "Guess I'll never heard the end of that joke...")
+		await client.message_create(message.channel, "Guess I'll never hear the end of that joke...")
 	finally:
 		jokes_responded_to.remove(message.id)
 
