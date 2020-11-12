@@ -5,9 +5,11 @@ from hata import Client, UserBase, ChannelBase, Embed
 from hata.ext.commands import setup_ext_commands, FlaggedAnnotation, ConverterFlag, checks
 from hata.ext.commands.helps.subterranean import SubterraneanHelpCommand
 from utils.utils import colourfunc
+from utils.safe import setup_ext_safe_commands
 
 Bcom: Client
 setup_ext_commands(Bcom, config.BCOM_PREFIX, mention_prefix=True)
+setup_ext_safe_commands(Bcom)
 Bcom.commands(SubterraneanHelpCommand(color=colourfunc), name='help')
 
 
