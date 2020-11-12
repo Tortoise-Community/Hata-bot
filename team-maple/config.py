@@ -24,9 +24,9 @@ if TYPE_CHECKING:
 		command_processer: CommandProcesser
 		commands: _EventHandlerManager
 		events: EventDescriptor
-		potato_channel: ChannelText
+		potato_channel: Optional[ChannelText]
 
-		def _init(self, potato_channel: ChannelText) -> 'MapleClient':
+		def _init(self, potato_channel: Optional[ChannelText] = ...) -> 'MapleClient':
 			...
 
 		async def human_delay(self, channel: Optional[ChannelText] = ...) -> None:
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 else:
 	@KeepType(Client)
 	class MapleClient:
-		def _init(self, potato_channel):
+		def _init(self, potato_channel=None):
 			self.potato_channel = potato_channel
 			return self
 
@@ -74,12 +74,12 @@ def create_clients() -> None:
 			client_info.append({
 				'ID': client_ids[i],
 				'TOKEN': token,
-				'POTATO_CHANNEL_ID': potato_channel_ids[i]
+				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) == i+1 else None
 			})
 
 	print('Attemping to create {} MapleClients...'.format(len(client_info)))
 	for info in client_info:
-		potato_channel = ChannelText.precreate(info['POTATO_CHANNEL_ID'])
+		potato_channel = ChannelText.precreate(info['POTATO_CHANNEL_ID']) if info['POTATO_CHANNEL_ID'] else None
 		client = MapleClient(info['TOKEN'], client_id=info['ID'])._init(potato_channel)
 		# TODO - parameterize prefix
 		setup_ext_commands(client, '.')

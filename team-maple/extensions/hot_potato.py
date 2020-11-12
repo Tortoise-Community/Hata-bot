@@ -51,7 +51,11 @@ async def potato(
 	# Get client with provided guild
 	if guild != message.guild:
 		# Find client that has a potato channel in the provided guild
-		other_client = next((other_client for other_client in CLIENTS if other_client.potato_channel.guild == guild), None)
+		other_client = next((
+			other_client
+			for other_client in CLIENTS
+			if other_client.potato_channel and other_client.potato_channel.guild == guild
+		), None)
 		if not other_client:
 			return await client.message_create(message.channel, 'Guild is not playing hot potato')
 	else:
@@ -111,8 +115,16 @@ async def toss(client: MapleClient, message: Message) -> Any:
 
 	# Send potato to any other potato channel, but prioritize channels not in the current guild
 	async with potato_lock:
-		pool = [other_client for other_client in CLIENTS if other_client.potato_channel != message.channel]
-		foreign_pool = [other_client for other_client in pool if other_client.potato_channel.guild != message.channel.guild]
+		pool = [
+			other_client
+			for other_client in CLIENTS
+			if other_client.potato_channel and other_client.potato_channel != message.channel
+		]
+		foreign_pool = [
+			other_client
+			for other_client in pool
+			if other_client.potato_channel and other_client.potato_channel.guild != message.channel.guild
+		]
 		if foreign_pool:
 			pool = foreign_pool
 		other_client = random.choice(pool)
@@ -177,6 +189,7 @@ def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
 
-		potato_channel_check = checks.is_channel(client.potato_channel)
-		client.commands(checks=[potato_channel_check])(toss)
-		client.commands(checks=[potato_channel_check])(potato)
+		if client.potato_channel:
+			potato_channel_check = checks.is_channel(client.potato_channel)
+			client.commands(checks=[potato_channel_check])(toss)
+			client.commands(checks=[potato_channel_check])(potato)
