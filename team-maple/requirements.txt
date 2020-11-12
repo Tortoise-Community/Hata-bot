@@ -1,5 +1,5 @@
 hata
-dotenv
+python-dotenv
 opencv-python
 Pillow
 numpy

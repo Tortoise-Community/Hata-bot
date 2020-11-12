@@ -1,5 +1,6 @@
 import os
 import random
+import sys
 from typing import List, Optional, TYPE_CHECKING
 
 
@@ -9,6 +10,7 @@ from hata.discord.parsers import EventDescriptor, _EventHandlerManager
 from hata.ext.commands import setup_ext_commands, CommandProcesser
 from hata.backend import KeepType, sleep
 
+from env import CLIENT_INFO, ClientInfoDict
 load_dotenv()
 
 
@@ -44,17 +46,40 @@ else:
 
 
 def create_clients() -> None:
-	"""Create all clients"""
-	# TODO - implement error handling based on missing or invalid enviroment values
-	client_ids = [int(token.strip()) for token in (os.getenv('CLIENT_IDS') or '').split(',') if token]
-	client_tokens = [token.strip() for token in (os.getenv('CLIENT_TOKENS') or '').split(',') if token]
-	potato_channels: List[ChannelText] = [
-		ChannelText.precreate(int(id.strip()))
-		for id in (os.getenv('POTATO_CHANNEL_IDS') or '').split(',')
-		if id.strip()
-	]
+	"""Create all clients
 
-	for i, token in enumerate(client_tokens):
-		client = MapleClient(token, client_id=client_ids[i])._init(potato_channels[i])
+	First attempt to load data from enviroment variables, then the env.py file
+	"""
+	client_tokens = [token.strip() for token in (os.getenv('CLIENT_TOKENS') or '').split(',') if token]
+
+	if not CLIENT_INFO and not client_tokens:
+		print('No clients found in enviroment variables or env.py')
+		sys.exit(1)
+
+	client_info: List[ClientInfoDict] = []
+	if not client_tokens:
+		client_info = CLIENT_INFO
+	else:
+		client_ids = [
+			int(id.strip())
+			for id in (os.getenv('CLIENT_IDS') or '').split(',')
+			if id
+		]
+		potato_channel_ids = [
+			int(id.strip())
+			for id in (os.getenv('POTATO_CHANNEL_IDS') or '').split(',')
+			if id.strip()
+		]
+		for i, token in enumerate(client_tokens):
+			client_info.append({
+				'ID': client_ids[i],
+				'TOKEN': token,
+				'POTATO_CHANNEL_ID': potato_channel_ids[i]
+			})
+
+	print('Attemping to create {} MapleClients...'.format(len(client_info)))
+	for info in client_info:
+		potato_channel = ChannelText.precreate(info['POTATO_CHANNEL_ID'])
+		client = MapleClient(info['TOKEN'], client_id=info['ID'])._init(potato_channel)
 		# TODO - parameterize prefix
 		setup_ext_commands(client, '.')

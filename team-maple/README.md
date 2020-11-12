@@ -12,6 +12,10 @@ Done via enviroment variables, also through a `.env` file
 
 Copy the `.env-example` to `.env` and fill in the values accordingly
 
+Additionally, one can provide the same information as `dict`s to to the `CLIENT_INFO` list in `env.py`
+
+> Enviroment variables take precedence over `CLIENT_INFO`
+
 ## Extensions
 
 ### Hot Potato
