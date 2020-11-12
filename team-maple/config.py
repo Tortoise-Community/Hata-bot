@@ -65,6 +65,10 @@ def create_clients() -> None:
 			for id in (os.getenv('CLIENT_IDS') or '').split(',')
 			if id
 		]
+		if len(client_tokens) != len(client_ids):
+			print('Number of Client IDs and Tokens must be equal')
+			sys.exit(1)
+
 		potato_channel_ids = [
 			int(id.strip())
 			for id in (os.getenv('POTATO_CHANNEL_IDS') or '').split(',')
