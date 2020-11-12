@@ -1,9 +1,8 @@
 import inspect
 from itertools import cycle
 
-from config import CORE_GUILD
 from hata import Client, Message, CLIENTS, User
-from utils.utils import ALL, owneronly, SEQUENTIAL_ASK_NEXT
+from utils.utils import ALL, owneronly, SEQUENTIAL_ASK_NEXT, EscapedException
 
 clients = cycle(CLIENTS)
 
@@ -40,8 +39,9 @@ async def source(client: Client, message: Message, command: str):
     code = inspect.getsource(client.command_processer.commands[command].command)
     await client.message_create(message.channel, '```py\n' + code + '\n```')
 
+
 @Reimu.commands
-class lookup(SEQUENTIAL_ASK_NEXT):
+class lookup(SEQUENTIAL_ASK_NEXT): #TODO:- Replace this class with the userinfo command
     async def __call__(self, client: Client, message: Message, user: User):
         await self._exec(client, message, user)
 
@@ -64,3 +64,20 @@ class lookup(SEQUENTIAL_ASK_NEXT):
             channel = message.channel
         count = len([x for x in user.guild_profiles if client.id in x.users])
         await method(channel, content=f'{user.name} is in {count} servers as I am')
+
+
+@ALL.commands
+async def command_error(client, message, command, content, err):
+    if isinstance(err, EscapedException):
+        return print(err.error)
+    raise err
+
+# @ALL.events
+# async def message_create(client: Client, message: Message):
+#     if Reimu.id in message.guild.users:
+#         if client is not Reimu:
+#             return
+#     elif Bcom.id in message.guild.users:
+#         if client is not Bcom:
+#             return
+#     print(message)

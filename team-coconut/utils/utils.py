@@ -3,9 +3,10 @@ from audioop import add as add_voice
 
 from config import CORE_GUILD
 from config import WHITELISTED_OWNERS
-from hata import CLIENTS, Client, Message, Webhook
+from hata import CLIENTS, Client, Message, Webhook, eventlist
 from hata.discord.opus import OpusDecoder
 from hata.discord.player import AudioSource
+from hata.ext.commands import Command
 from hata.ext.commands.command import checks
 
 
@@ -19,7 +20,47 @@ def getseq():
     return client_sequence
 
 
+class COMMAND_CLASS:
+    def __init__(self):
+        self.command_klass_list = []
+        self.clients = list(CLIENTS)
+        for i in range(len(self.clients)):
+            self.command_klass_list.append(eventlist(type_=Command))
+
+    def __call__(self, klass):
+        for i in range(len(self.clients)):
+            self.command_klass_list[i].from_class(klass)
+        return klass
+
+    def from_class(self, klass):
+        self.__call__(klass)
+
+
 class wrapper:
+
+    def __init__(self):
+        self.command_class = COMMAND_CLASS()
+
+    async def leave(self, message):
+        for client in CLIENTS:
+            vc = client.voice_client_for(message)
+            if vc:
+                await vc.disconnect()
+
+    def extend(self, cmd_clas):
+        for pos, client in enumerate(cmd_clas.clients):
+            client.commands.extend(cmd_clas.command_klass_list[pos])
+
+    def unextend(self, cmd_clas):
+        for pos, client in enumerate(cmd_clas.clients):
+            client.commands.unextend(cmd_clas.command_klass_list[pos])
+
+    def make_category(self, name):
+        for client in list(CLIENTS):
+            category = client.command_processer.get_category(name)
+            if not category:
+                client.command_processer.create_category(name)
+
     def commands(self, func=None, **kwargs):
         if func is None:
             return self.wrap('w', **kwargs)
@@ -140,6 +181,13 @@ class MixerStream(AudioSource):
 def setdefault(_dict, val, default):
     _dict[val] = _dict.get(val, default)
     return _dict[val]
+
+
+class EscapedException(Exception):
+    def __init__(self, error, _type=None):
+        super().__init__(error)
+        self.error = error
+        self.type = _type
 
 
 ALL = wrapper()
