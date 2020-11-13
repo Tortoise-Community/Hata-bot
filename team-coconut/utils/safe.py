@@ -1,7 +1,7 @@
 from hata import CLIENTS, Embed, ChannelVoice, ChannelText
 from hata.backend.dereaddons_local import _spaceholder
-from utils.utils import EscapedException
 from hata.ext.commands import utils
+from utils.utils import EscapedException
 
 
 class setup_ext_safe_commands:
@@ -12,6 +12,8 @@ class setup_ext_safe_commands:
         client.safe_join_voice_channel = self.safe_join_voice_channel
         client.check_voice_perms = self.check_voice_perms
         client.safe_wait_for = self.safe_wait_for
+        client.safe_webhook_get_channel = self.safe_webhook_get_channel
+        client.safe_webhook_create = self.safe_webhook_create
         self.client = client
 
     async def safe_message_create(self, message, channel, content=None, embed=None, file=None,
@@ -65,7 +67,6 @@ class setup_ext_safe_commands:
                 else:
                     raise NotImplemented()
 
-
     async def safe_reaction_add(self, message, emoji, show_error=False):
         _CLIENTS = list(CLIENTS)[:]
         _CLIENTS = [_CLIENTS.pop(_CLIENTS.index(self.client))] + _CLIENTS
@@ -86,7 +87,7 @@ class setup_ext_safe_commands:
             if perms.can_manage_messages:
                 return await _client.reaction_clear(message)
         if show_error:
-            await self.safe_message_create(message, message.channel, 'Give me manage messages permission')
+            await self.safe_message_create(message, message.channel, 'Give me manage messages permission', ignore=True)
         if important:
             raise EscapedException(err, 'remove_reaction')
         print(err)
@@ -103,6 +104,28 @@ class setup_ext_safe_commands:
             elif speak and perms.can_speak:
                 return True
 
+    async def safe_webhook_get_channel(self, message, channel):
+        _CLIENTS = list(CLIENTS)[:]
+        _CLIENTS = [_CLIENTS.pop(_CLIENTS.index(self.client))] + _CLIENTS
+        for _client in _CLIENTS:
+            perms = channel.cached_permissions_for(_client)
+            if perms.can_manage_webhooks:
+                return await _client.webhook_get_channel(channel)
+        err = f'Don\'t have manage webhooks permissions in {channel.mention}'
+        await self.safe_message_create(message, message.channel, err, ignore=True)
+        raise EscapedException(err, 'manage_webhooks')
+
+    async def safe_webhook_create(self, message, channel, name, avatar=None):
+        _CLIENTS = list(CLIENTS)[:]
+        _CLIENTS = [_CLIENTS.pop(_CLIENTS.index(self.client))] + _CLIENTS
+        for _client in _CLIENTS:
+            perms = channel.cached_permissions_for(_client)
+            if perms.can_manage_webhooks:
+                return await _client.webhook_create(channel, name, avatar)
+        err = f'Don\'t have manage webhooks permissions in {channel.mention}'
+        await self.safe_message_create(message, message.channel, err, ignore=True)
+        raise EscapedException(err, 'manage_webhooks')
+
     async def safe_join_voice_channel(self, message, voice_channel: ChannelVoice, show_error=True, escape=False):
         _CLIENTS = list(CLIENTS)[:]
         _CLIENTS = [_CLIENTS.pop(_CLIENTS.index(self.client))] + _CLIENTS
@@ -112,7 +135,7 @@ class setup_ext_safe_commands:
             if perms.can_connect:
                 return await _client.join_voice_channel(voice_channel)
         if show_error:
-            await self.safe_message_create(message, message.channel, err)
+            await self.safe_message_create(message, message.channel, err, ignore=True)
         if not escape:
             raise EscapedException(err, 'join_voice')
         print(err)

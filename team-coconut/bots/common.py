@@ -71,13 +71,3 @@ async def command_error(client, message, command, content, err):
     if isinstance(err, EscapedException):
         return print(err.error)
     raise err
-
-# @ALL.events
-# async def message_create(client: Client, message: Message):
-#     if Reimu.id in message.guild.users:
-#         if client is not Reimu:
-#             return
-#     elif Bcom.id in message.guild.users:
-#         if client is not Bcom:
-#             return
-#     print(message)

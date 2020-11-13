@@ -1,70 +1,77 @@
 from databases.shared_data import common_data
-from hata import Client, Message, Guild, ChannelText, User, eventlist
-from hata.ext.commands import Command
+from hata import Client, Message, ChannelText, CHANNELS, CLIENTS
+from utils.utils import ALL, send, setdefault
 
+CHAT_COMMANDS = ALL.command_class
 Reimu: Client
-CHAT_COMMANDS = eventlist(type_=Command)
+Bcom: Client
+Astra: Client
 
 
 def setup(lib):
-    category = Reimu.command_processer.get_category('CHAT')
-    if not category:
-        Reimu.command_processer.create_category('CHAT', )
-
-    Reimu.commands.extend(CHAT_COMMANDS)
+    ALL.make_category('ChatCMDS')
+    ALL.extend(CHAT_COMMANDS)
 
 
 def teardown(lib):
-    Reimu.commands.unextend(CHAT_COMMANDS)
+    ALL.unextend(CHAT_COMMANDS)
 
 
-@CHAT_COMMANDS.from_class
+@CHAT_COMMANDS
 class connect:
     """
     Connects the current channel to any other channel in any other server
     Usage - **`connect [channel mention or id] <guild>`**
     """
-    category = 'CHAT'
+    category = 'ChatCMDS'
 
-    async def command(client: Client, message: Message, channel: ('int', 'channel'), guild: Guild = None):
-        initial_webhook = await client.webhook_get_channel(message.channel)
-        if guild is None:
-            guild = message.guild
-        if not isinstance(channel, ChannelText):
-            channel = guild.channels.get(channel)
-        if not isinstance(channel, ChannelText):
-            return await client.message_create(message.channel, f'Unknown Channel in guild {guild.name}')
-        if message.channel.id in common_data:
-            other = common_data[message.channel.id]["other"]
-            if other.guild is message.guild:
-                return await client.message_create(message.channel, f'You already connected to {other.mention}')
-            return await client.message_create(message.channel,
-                                               f'You already connected to {other.mention} in **`{other.guild}`**')
-        if channel.id in common_data:
-            return await client.message_create(message.channel,
-                                               f'{channel.mention} is already connected to another channel')
+    async def command(client: Client, message: Message, channel: ('int', 'channel')):
+        if isinstance(channel, ChannelText):
+            channel = channel.id
+        if not isinstance(channel, int):
+            return await client.safe_message_create(message, message.channel, 'Invalid Channel')
+        if not (channel := CHANNELS.get(channel)):
+            return await client.safe_message_create(message, message.channel, 'Invalid Channel')
+        initial_webhook = await client.safe_webhook_get_channel(message, message.channel)
+        final_webhook = await client.safe_webhook_get_channel(message, channel)
+        data = setdefault(common_data, 'ChatData', {})
+        guild_data = setdefault(data, message.guild.id, {})
+        if len(guild_data) >= 2:
+            return await client.safe_message_create(message, message.channel, 'Your guild already has 2 connections')
+        other_guild_data = setdefault(data, channel.guild.id, {})
+        if len(other_guild_data) >= 2:
+            return await client.safe_message_create(message, message.channel,
+                                                    f'{channel.guild.name} already has 2 connections')
+        if message.channel.id in guild_data:
+            return await client.safe_message_create(message, message.channel,
+                                                    f'You are already connected with <#{guild_data[message.channel.id]["other"].id}>')
+        if channel.id in other_guild_data:
+            return await client.safe_message_create(message, message.channel,
+                                                    f'<#{other_guild_data[channel.id]["other"].id}> is already connected with another channel')
         if message.channel is channel:
-            return await client.message_create(message.channel, 'You must provide a different channel')
+            return await client.safe_message_create(message, message.channel,
+                                                    'You must provide a different channel to connect with')
         if initial_webhook:
             initial_webhook = initial_webhook[0]
         else:
-            initial_webhook = await client.webhook_create(message.channel, 'Coconuts')
-        final_webhook = await client.webhook_get_channel(channel)
+            initial_webhook = await client.safe_webhook_create(message, message.channel, 'Coconuts')
         if final_webhook:
             final_webhook = final_webhook[0]
         else:
-            final_webhook = await client.webhook_create(channel, 'Coconuts')
-        common_data[message.channel.id] = {}
-        common_data[message.channel.id]['webhook'] = final_webhook
-        common_data[message.channel.id]['other'] = channel
-        common_data[channel.id] = {}
-        common_data[channel.id]['webhook'] = initial_webhook
-        common_data[channel.id]['other'] = message.channel
+            final_webhook = await client.safe_webhook_create(message, channel, 'Coconuts')
+        guild_data[message.channel.id] = {}
+        guild_data[message.channel.id]['webhook'] = final_webhook
+        guild_data[message.channel.id]['other'] = channel
+        other_guild_data[channel.id] = {}
+        other_guild_data[channel.id]['webhook'] = initial_webhook
+        other_guild_data[channel.id]['other'] = message.channel
         if channel.guild is message.guild:
-            await client.message_create(message.channel, f'Connected to {channel.mention}')
-            return await client.message_create(channel, f'Connected to {message.channel.mention}')
-        await client.message_create(message.channel, f'Connected to {channel.mention} in **`{channel.guild.name}`**')
-        await client.message_create(channel, f'Connected to {message.channel.mention} in **`{message.guild.name}`**')
+            await client.safe_message_create(message, message.channel, f'Connected to {channel.mention}')
+            return await client.safe_message_create(message, channel, f'Connected to {message.channel.mention}')
+        await client.safe_message_create(message, message.channel,
+                                         f'Connected to {channel.mention} in **`{channel.guild.name}`**')
+        await client.safe_message_create(message, channel,
+                                         f'Connected to {message.channel.mention} in **`{message.guild.name}`**')
 
 
 @CHAT_COMMANDS.from_class
@@ -76,47 +83,52 @@ class disconnect:
     category = 'CHAT'
 
     async def command(client: Client, message: Message):
-        if message.channel.id not in common_data:
-            return await client.message_create(message.channel, 'There isn\'t a connection in this channel')
-        other = common_data[message.channel.id]['other']
+        data = setdefault(common_data, 'ChatData', {})
+        guild_data = setdefault(data, message.guild.id, {})
+        if message.channel.id not in guild_data:
+            return await client.safe_message_create(message, message.channel,
+                                                    'There isn\'t a connection in this channel')
+        other = guild_data[message.channel.id]['other']
         if other.guild is message.guild:
-            await client.message_create(message.channel, f'Disconnected from {other.mention}')
-            await client.message_create(other, f'Disconnected from {message.channel.mention}')
+            await client.safe_message_create(message, message.channel, f'Disconnected from {other.mention}')
+            await client.safe_message_create(message, other, f'Disconnected from {message.channel.mention}')
         else:
-            await client.message_create(other,
-                                        f'Disconnected from {message.channel.mention} in `**{message.guild.name}**`')
-            await client.message_create(message.channel,
-                                        f'Disconnected from {other.mention} in `**{other.guild.name}**`')
-        del common_data[other.id]
-        del common_data[message.channel.id]
+            await client.safe_message_create(message, other,
+                                             f'Disconnected from {message.channel.mention} in **`{message.guild.name}`**')
+            await client.safe_message_create(message, message.channel,
+                                             f'Disconnected from {other.mention} in **`{other.guild.name}`**')
+        del common_data['ChatData'][other.guild.id][other.id]
+        del common_data['ChatData'][message.guild.id][message.channel.id]
 
 
-@CHAT_COMMANDS.from_class
-class chatmute:
-    """
-    Blocks the given user from using the global chat
-    Usage - **`chatmute [user mention or id]`**
-    """
-    category = 'CHAT'
-
-    async def command(client: Client, message: Message, user: User):
-        if common_data.get('muted') is None:
-            common_data['muted'] = []
-        common_data['muted'].append(user.id)
-        await client.message_create(message.channel, f'Muted {user.mention}')
+CLIENTS = list(CLIENTS)[:]
 
 
-@CHAT_COMMANDS.from_class
-class chatunmute:
-    """
-    Unblocks the given user for using the global chat
-    Usage - **`chatunmute [user mention or id]`**
-    """
-    category = 'CHAT'
+async def unify(message: Message):
+    if message.author.is_bot:
+        return
+    if message.channel.id in common_data.get('ChatData', {}).get(message.guild.id, {}):
+        for _client in CLIENTS:
+            if message.content.startswith(_client.command_processer.prefix):
+                return
+        other = common_data['ChatData'][message.guild.id][message.channel.id]['other']
+        i = 0
+        for _client in CLIENTS:
+            if other.cached_permissions_for(_client).can_manage_webhooks:
+                break
+            i += 1
+        if i == 3:
+            return
+        return await send(_client, common_data['ChatData'][message.guild.id][message.channel.id]['webhook'],
+                          message)
 
-    async def command(client: Client, message: Message, user: User):
-        if common_data.get('muted') is None:
-            common_data['muted'] = []
-        if user.id in common_data['muted']:
-            common_data['muted'].remove(user.id)
-        await client.message_create(message.channel, f'Unmuted {user.mention}')
+
+@ALL.events
+async def message_create(client: Client, message: Message):
+    if Reimu.id in message.guild.users:
+        if client is not Reimu:
+            return
+    elif Bcom.id in message.guild.users:
+        if client is not Bcom:
+            return
+    await unify(message)
