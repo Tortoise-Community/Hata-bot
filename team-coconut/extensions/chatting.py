@@ -8,23 +8,24 @@ Bcom: Client
 Astra: Client
 
 
-def setup(lib):
+def setup(_lib):
     ALL.make_category('ChatCMDS')
     ALL.extend(CHAT_COMMANDS)
 
 
-def teardown(lib):
+def teardown(_lib):
     ALL.unextend(CHAT_COMMANDS)
 
 
 @CHAT_COMMANDS
-class connect:
+class Connect:
     """
     Connects the current channel to any other channel in any other server
     Usage - **`connect [channel mention or id] <guild>`**
     """
     category = 'ChatCMDS'
 
+    @staticmethod
     async def command(client: Client, message: Message, channel: ('int', 'channel')):
         if isinstance(channel, ChannelText):
             channel = channel.id
@@ -44,10 +45,12 @@ class connect:
                                                     f'{channel.guild.name} already has 2 connections')
         if message.channel.id in guild_data:
             return await client.safe_message_create(message, message.channel,
-                                                    f'You are already connected with <#{guild_data[message.channel.id]["other"].id}>')
+                                                    f'You are already connected '
+                                                    f'with <#{guild_data[message.channel.id]["other"].id}>')
         if channel.id in other_guild_data:
             return await client.safe_message_create(message, message.channel,
-                                                    f'<#{other_guild_data[channel.id]["other"].id}> is already connected with another channel')
+                                                    f'<#{other_guild_data[channel.id]["other"].id}> '
+                                                    f'is already connected with another channel.')
         if message.channel is channel:
             return await client.safe_message_create(message, message.channel,
                                                     'You must provide a different channel to connect with')
@@ -75,13 +78,14 @@ class connect:
 
 
 @CHAT_COMMANDS.from_class
-class disconnect:
+class Disconnect:
     """
     Disconnects the current channel from all other channel connections
     Usage - **`disconnect`**(no other parameters)
     """
     category = 'CHAT'
 
+    @staticmethod
     async def command(client: Client, message: Message):
         data = setdefault(common_data, 'ChatData', {})
         guild_data = setdefault(data, message.guild.id, {})
@@ -94,7 +98,8 @@ class disconnect:
             await client.safe_message_create(message, other, f'Disconnected from {message.channel.mention}')
         else:
             await client.safe_message_create(message, other,
-                                             f'Disconnected from {message.channel.mention} in **`{message.guild.name}`**')
+                                             f'Disconnected from {message.channel.mention} '
+                                             f'in **`{message.guild.name}`**')
             await client.safe_message_create(message, message.channel,
                                              f'Disconnected from {other.mention} in **`{other.guild.name}`**')
         del common_data['ChatData'][other.guild.id][other.id]

@@ -6,7 +6,7 @@ from hata.ext.commands.command import COMMAND_RP
 
 hata.start_clients()
 
-USER_MENTION_RP = re.compile('<@!?(\d{7,21})>')
+USER_MENTION_RP = re.compile(r'<@!?(\d{7,21})>')
 
 
 # this class is only if huyane doesnt add the feature to overide the checks of this class by the end of the jam
@@ -65,9 +65,9 @@ async def __call__(self, client, message):
                 result = await command(client, message, content)
             except BaseException as err:
                 command_error = self._command_error
-                if (command_error is not None):
+                if command_error is not None:
                     checks = self._command_error_checks
-                    if (checks is None):
+                    if checks is None:
                         await command_error(client, message, command, content, err)
                         return
                     else:
@@ -76,7 +76,7 @@ async def __call__(self, client, message):
                                 continue
 
                             handler = check.handler
-                            if (handler is not None):
+                            if handler is not None:
                                 await handler(client, message, command, check)
                             break
                         else:
@@ -100,15 +100,15 @@ async def __call__(self, client, message):
             command = self.commands[command_name]
         except KeyError:
             invalid_command = self._invalid_command
-            if (invalid_command is not None):
+            if invalid_command is not None:
                 checks = self._invalid_command_checks
-                if (checks is not None):
+                if checks is not None:
                     for check in checks:
                         if await check(client, message):
                             continue
 
                         handler = check.handler
-                        if (handler is not None):
+                        if handler is not None:
                             await handler(client, message, command_name, check)
                         return
 
@@ -120,9 +120,9 @@ async def __call__(self, client, message):
             result = await command(client, message, content)
         except BaseException as err:
             command_error = self._command_error
-            if (command_error is not None):
+            if command_error is not None:
                 checks = self._command_error_checks
-                if (checks is None):
+                if checks is None:
                     await command_error(client, message, command_name, content, err)
                     return
                 else:
@@ -131,7 +131,7 @@ async def __call__(self, client, message):
                             continue
 
                         handler = check.handler
-                        if (handler is not None):
+                        if handler is not None:
                             await handler(client, message, command_name, check)
                         break
                     else:
@@ -146,15 +146,15 @@ async def __call__(self, client, message):
                 return
 
             invalid_command = self._invalid_command
-            if (invalid_command is not None):
+            if invalid_command is not None:
                 checks = self._invalid_command_checks
-                if (checks is not None):
+                if checks is not None:
                     for check in checks:
                         if await check(client, message):
                             continue
 
                         handler = check.handler
-                        if (handler is not None):
+                        if handler is not None:
                             await handler(client, message, command_name, check)
                         return
 
@@ -163,7 +163,7 @@ async def __call__(self, client, message):
             return
 
     default_event = self._default_event
-    if (default_event is not None):
+    if default_event is not None:
         await default_event(client, message)
 
 

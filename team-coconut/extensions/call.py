@@ -9,12 +9,12 @@ Bcom: Client
 Astra: Client
 
 
-def setup(lib):
+def setup(_lib):
     ALL.make_category('CallCMDS')
     ALL.extend(CALL_COMMANDS)
 
 
-def teardown(lib):
+def teardown(_lib):
     ALL.unextend(CALL_COMMANDS)
 
 
@@ -32,30 +32,31 @@ async def cleanup(id1, id2):
 
 
 @CALL_COMMANDS
-class register:
+class Register:
     category = 'CallCMDS'
 
-    async def command(client: Client, message: Message):
+    async def command(self: Client, message: Message):
         setdefault(common_data, 'CallRegisterData', {})
-        voice_client = client.voice_client_for(message)
+        voice_client = self.voice_client_for(message)
         if voice_client is None:
             voice_client = message.guild.voice_states.get(message.author.id, None)
         if not voice_client:
-            return await client.safe_message_create(message, message.channel, 'You must join a voice channel first')
-        if not client.check_voice_perms(voice_client.channel, True):
-            return await client.safe_message_create(message, message.channel,
-                                                    f'I dont have permissions to connect to {voice_client.channel.name}')
-        if not client.check_voice_perms(voice_client.channel, False, True):
-            return await client.safe_message_create(message, message.channel,
-                                                    f'I dont have permissions to speak in {voice_client.channel.name}')
+            return await self.safe_message_create(message, message.channel, 'You must join a voice channel first')
+        if not self.check_voice_perms(voice_client.channel, True):
+            return await self.safe_message_create(message, message.channel,
+                                                  f'I dont have permission to connect to {voice_client.channel.name}')
+        if not self.check_voice_perms(voice_client.channel, False, True):
+            return await self.safe_message_create(message, message.channel,
+                                                  f'I dont have permission to speak in {voice_client.channel.name}')
         guild_data = setdefault(common_data['CallRegisterData'], message.guild.id, {})
         guild_data['VoiceID'] = voice_client.channel.id
         guild_data['ChannelID'] = message.channel.id
         guild_data['UserID'] = message.author.id
 
-        msg = f"The voice channel **`{voice_client.channel.name}`** is now registered as the server's Phone. you will receive phone request calls in {message.channel.mention}"
+        msg = f"The voice channel **`{voice_client.channel.name}`** is now registered as the server's Phone. " \
+              f"you will receive phone request calls in {message.channel.mention}"
         msg += f'\n**{message.guild.id}** is your phone number'
-        await client.safe_message_create(message, message.channel, msg)
+        await self.safe_message_create(message, message.channel, msg)
 
 
 def check(_id, event):
@@ -71,94 +72,98 @@ def check2(_id, event):
 
 
 @CALL_COMMANDS
-class call:
+class Call:
     category = 'CallCMDS'
 
-    async def command(client: Client, message: Message, number: 'int'):
+    async def command(self: Client, message: Message, number: 'int'):
         if message.guild.id not in common_data.get('CallRegisterData', {}).keys():
-            return await client.safe_message_create(message, message.channel,
-                                                    'Register this server first by typing `r1register`')
+            return await self.safe_message_create(message, message.channel,
+                                                  'Register this server first by typing `r1register`')
         if number not in common_data.get('CallRegisterData', {}).keys():
-            return await client.safe_message_create(message, message.channel, f'Number {number} not found')
+            return await self.safe_message_create(message, message.channel, f'Number {number} not found')
         if number == message.guild.id:
-            return await client.safe_message_create(message, message.channel, f'Call someone other than yourself')
+            return await self.safe_message_create(message, message.channel, f'Call someone other than yourself')
         if number in common_data.get('CallData', {}).keys():
-            return await client.safe_message_create(message, message.channel, f'{number} is already in a call ')
+            return await self.safe_message_create(message, message.channel, f'{number} is already in a call ')
         if message.guild.id in common_data.get('CallData', {}).keys():
-            return await client.safe_message_create(message, message.channel, f'You are already on a call ')
-        await client.safe_message_create(message, message.channel, f'Attempting to call {number}')
+            return await self.safe_message_create(message, message.channel, f'You are already on a call ')
+        await self.safe_message_create(message, message.channel, f'Attempting to call {number}')
         data = common_data['CallRegisterData']
         other_channel = ChannelText.precreate(data[number]['ChannelID'])
         if not other_channel.guild:
-            return await client.safe_message_create(message, message.channel,
-                                                    f'{number}\'s registered call receiving channel doesnt exists anymore')
+            return await self.safe_message_create(message, message.channel,
+                                                  f'{number}\'s registered call receiving channel '
+                                                  f'does not exist anymore.')
         other_voice = ChannelVoice.precreate(data[number]['VoiceID'])
         if not other_voice.guild:
-            return await client.safe_message_create(message, other_channel,
-                                                    f"<@{data[number]['UserID']}> your registered voice channel doesnt exists anymore")
+            return await self.safe_message_create(message, other_channel,
+                                                  f"<@{data[number]['UserID']}> your registered voice channel "
+                                                  f"does not exist anymore.")
         my_voice = ChannelVoice.precreate(data[message.guild.id]['VoiceID'])
         if not my_voice.guild:
-            return await client.safe_message_create(message, message.channel,
-                                                    f"{message.author.mention} your registered voice channel doesnt exists anymore")
-        other_message = await client.safe_message_create(message, other_channel,
-                                                         f"<@{data[number]['UserID']}>" + f' incoming call from {message.guild.id}',
-                                                         log=True)
+            return await self.safe_message_create(message, message.channel,
+                                                  f"{message.author.mention} your registered voice channel "
+                                                  f"does not exist anymore.")
+        other_message = await self.safe_message_create(message, other_channel,
+                                                       f"<@{data[number]['UserID']}> "
+                                                       f"incoming call from {message.guild.id}",
+                                                       log=True)
         escaped = False
         try:
-            await client.safe_reaction_add(other_message, BUILTIN_EMOJIS['white_check_mark'], True)
-            await client.safe_reaction_add(other_message, BUILTIN_EMOJIS['x'], True)
+            await self.safe_reaction_add(other_message, BUILTIN_EMOJIS['white_check_mark'], True)
+            await self.safe_reaction_add(other_message, BUILTIN_EMOJIS['x'], True)
         except EscapedException as err:
             if err.type != 'add_reaction':
                 raise err
             escaped = True
-            await client.safe_message_create(message, other_channel, 'Accept(A/Y) or Decline(D/N)')
+            await self.safe_message_create(message, other_channel, 'Accept(A/Y) or Decline(D/N)')
         if not escaped:
             try:
-                res = await client.safe_wait_for('reaction', other_message, lambda x: check(data[number]['UserID'], x),
-                                                 60)
+                res = await self.safe_wait_for('reaction', other_message, lambda x: check(data[number]['UserID'], x),
+                                               60)
             except TimeoutError:
-                await client.safe_eaction_clear(other_message)
-                await client.safe_message_create(message, other_channel, 'Call got timed out', log=True)
-                return await client.safe_message_create(message, message.channel,
-                                                        message.author.mention + ', Your call wasn\'t picked up')
+                await self.safe_eaction_clear(other_message)
+                await self.safe_message_create(message, other_channel, 'Call got timed out', log=True)
+                return await self.safe_message_create(message, message.channel,
+                                                      message.author.mention + ', Your call wasn\'t picked up')
             if res.emoji == BUILTIN_EMOJIS['white_check_mark']:
-                await client.safe_reaction_clear(other_message, True, False)
-                await client.safe_message_create(message, other_channel, 'Call Accepted', log=True)
-                await client.safe_message_create(message, message.channel,
-                                                 message.author.mention + ', Your call was accepted')
+                await self.safe_reaction_clear(other_message, True, False)
+                await self.safe_message_create(message, other_channel, 'Call Accepted', log=True)
+                await self.safe_message_create(message, message.channel,
+                                               message.author.mention + ', Your call was accepted')
             else:
-                await client.safe_reaction_clear(other_message, True, False)
-                await client.safe_message_create(message, other_channel, 'Call Declined', log=True)
-                return await client.safe_message_create(message, message.channel,
-                                                        message.author.mention + ', Your call was declined', log=True)
+                await self.safe_reaction_clear(other_message, True, False)
+                await self.safe_message_create(message, other_channel, 'Call Declined', log=True)
+                return await self.safe_message_create(message, message.channel,
+                                                      message.author.mention + ', Your call was declined', log=True)
         else:
             try:
-                res = await client.safe_wait_for('message', other_message, lambda x: check2(data[number]['UserID'], x),
-                                                 60)
+                res = await self.safe_wait_for('message', other_message, lambda x: check2(data[number]['UserID'], x),
+                                               60)
             except TimeoutError:
-                await client.safe_reaction_clear(other_message, True, False)
-                await client.safe_message_create(message, other_channel, 'Call got timed out', log=True)
-                return await client.safe_message_create(message, message.channel,
-                                                        message.author.mention + ', Your call wasn\'t picked up')
+                await self.safe_reaction_clear(other_message, True, False)
+                await self.safe_message_create(message, other_channel, 'Call got timed out', log=True)
+                return await self.safe_message_create(message, message.channel,
+                                                      message.author.mention + ', Your call wasn\'t picked up')
             if res.content.lower() in ['a', 'accept', 'y', 'yes']:
-                await client.reaction_clear(other_message)
-                await client.safe_message_create(message, other_channel, 'Call Accepted', log=True)
-                await client.safe_message_create(message, message.channel,
-                                                 message.author.mention + ', Your call was accepted')
+                await self.reaction_clear(other_message)
+                await self.safe_message_create(message, other_channel, 'Call Accepted', log=True)
+                await self.safe_message_create(message, message.channel,
+                                               message.author.mention + ', Your call was accepted')
             else:
-                await client.safe_reaction_clear(other_message, True, False)
-                await client.safe_message_create(message, other_channel, 'Call Declined', log=True)
-                return await client.safe_message_create(message, message.channel,
-                                                        message.author.mention + ', Your call was declined', log=True)
+                await self.safe_reaction_clear(other_message, True, False)
+                await self.safe_message_create(message, other_channel, 'Call Declined', log=True)
+                return await self.safe_message_create(message, message.channel,
+                                                      message.author.mention + ', Your call was declined', log=True)
 
-        vc1 = await client.safe_join_voice_channel(other_message, other_voice, True, True)
-        vc2 = await client.safe_join_voice_channel(message, my_voice, True, True)
+        vc1 = await self.safe_join_voice_channel(other_message, other_voice, True, True)
+        vc2 = await self.safe_join_voice_channel(message, my_voice, True, True)
         if not vc1:
-            await client.safe_message_create(message, message.channel,
-                                             f'Coudn\'t connect to {other_voice.name} in {other_message.guild.name}')
+            await self.safe_message_create(message, message.channel,
+                                           f'Coudn\'t connect to {other_voice.name} in {other_message.guild.name}')
         if not vc2:
-            await client.safe_message_create(message, other_channel,
-                                             f'Coudn\'t connect to {my_voice.name} in {message.guild.name}')
+            await self.safe_message_create(message, other_channel,
+                                           f'Coudn\'t connect to {my_voice.name} in {message.guild.name}')
 
         if not vc1 or not vc2:
             await ALL.leave(message)
@@ -167,7 +172,7 @@ class call:
 
         mixer = MixerStream()
         for user in other_voice.voice_users:
-            if user is client:
+            if user is self:
                 continue
 
             source = vc1.listen_to(user, yield_decoded=True)
@@ -176,7 +181,7 @@ class call:
 
         mixer = MixerStream()
         for user in other_voice.voice_users:
-            if user is client:
+            if user is self:
                 continue
 
             source = vc2.listen_to(user, yield_decoded=True)

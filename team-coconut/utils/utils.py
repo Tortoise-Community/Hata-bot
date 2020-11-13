@@ -10,7 +10,7 @@ from hata.ext.commands import Command
 from hata.ext.commands.command import checks
 
 
-def getseq():
+def get_seq():
     client_sequence = {}
     for pos, _client in enumerate(CLIENTS):
         if len(CLIENTS) == pos + 1:
@@ -20,7 +20,7 @@ def getseq():
     return client_sequence
 
 
-class COMMAND_CLASS:
+class CommandClass:
     def __init__(self):
         self.command_klass_list = []
         self.clients = list(CLIENTS)
@@ -36,26 +36,29 @@ class COMMAND_CLASS:
         self.__call__(klass)
 
 
-class wrapper:
-
+class Wrapper:
     def __init__(self):
-        self.command_class = COMMAND_CLASS()
+        self.command_class = CommandClass()
 
-    async def leave(self, message):
+    @staticmethod
+    async def leave(message):
         for client in CLIENTS:
             vc = client.voice_client_for(message)
             if vc:
                 await vc.disconnect()
 
-    def extend(self, cmd_clas):
-        for pos, client in enumerate(cmd_clas.clients):
-            client.commands.extend(cmd_clas.command_klass_list[pos])
+    @staticmethod
+    def extend(cmd_class):
+        for pos, client in enumerate(cmd_class.clients):
+            client.commands.extend(cmd_class.command_klass_list[pos])
 
-    def unextend(self, cmd_clas):
-        for pos, client in enumerate(cmd_clas.clients):
-            client.commands.unextend(cmd_clas.command_klass_list[pos])
+    @staticmethod
+    def unextend(cmd_class):
+        for pos, client in enumerate(cmd_class.clients):
+            client.commands.unextend(cmd_class.command_klass_list[pos])
 
-    def make_category(self, name):
+    @staticmethod
+    def make_category(name):
         for client in list(CLIENTS):
             category = client.command_processer.get_category(name)
             if not category:
@@ -66,7 +69,8 @@ class wrapper:
             return self.wrap('w', **kwargs)
         return self.wrap('w', **kwargs)(func)
 
-    def wrap(self, m, **kwargs):
+    @staticmethod
+    def wrap(m, **kwargs):
         def addfunc(func):
             for client in CLIENTS:
                 if m == 'w':
@@ -83,7 +87,7 @@ class wrapper:
         return self.wrap('e', **kwargs)(func)
 
 
-async def owneronly(client: Client, message: Message, *args, **kwargs):
+async def owneronly(_client: Client, message: Message, *_args, **_kwargs):
     if message.author.id not in WHITELISTED_OWNERS:
         return False
     return True
@@ -92,7 +96,7 @@ async def owneronly(client: Client, message: Message, *args, **kwargs):
 owneronly = [checks.custom(function=owneronly)]
 
 
-def colourfunc(client, message, name):
+def colourfunc(_client, message, _name):
     return message.author.color_at(message.guild)
 
 
@@ -103,7 +107,7 @@ async def send(client: Client, webhook: Webhook, message: Message):
 class SEQUENTIAL_ASK_NEXT:
     async def _exec(self, client: Client, message: Message, *args):
         await self.before_exec(client, message, *args)
-        _next = getseq()[client.id]
+        _next = get_seq()[client.id]
         if message.author not in CLIENTS:
             if message.guild.id != CORE_GUILD:
                 return await self.function(client, message, *args)
@@ -190,4 +194,4 @@ class EscapedException(Exception):
         self.type = _type
 
 
-ALL = wrapper()
+ALL = Wrapper()

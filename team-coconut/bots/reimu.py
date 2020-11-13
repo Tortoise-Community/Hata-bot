@@ -3,12 +3,12 @@ from hata import Client, Message, Guild, ChannelText
 from hata.discord.exceptions import DiscordException
 from hata.ext.commands import setup_ext_commands
 from hata.ext.commands.helps.subterranean import SubterraneanHelpCommand
-from utils.safe import setup_ext_safe_commands
+from utils.safe import SetupExternalSafeCommands
 from utils.utils import colourfunc
 
 Reimu: Client
 setup_ext_commands(Reimu, config.REIMU_PREFIX)
-setup_ext_safe_commands(Reimu)
+SetupExternalSafeCommands(Reimu)
 Reimu.commands(SubterraneanHelpCommand(color=colourfunc), name='help')
 
 

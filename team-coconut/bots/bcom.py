@@ -5,11 +5,11 @@ from hata import Client, UserBase, ChannelBase, Embed
 from hata.ext.commands import setup_ext_commands, FlaggedAnnotation, ConverterFlag, checks
 from hata.ext.commands.helps.subterranean import SubterraneanHelpCommand
 from utils.utils import colourfunc
-from utils.safe import setup_ext_safe_commands
+from utils.safe import SetupExternalSafeCommands
 
 Bcom: Client
 setup_ext_commands(Bcom, config.BCOM_PREFIX, mention_prefix=True)
-setup_ext_safe_commands(Bcom)
+SetupExternalSafeCommands(Bcom)
 Bcom.commands(SubterraneanHelpCommand(color=colourfunc), name='help')
 
 
@@ -29,7 +29,7 @@ async def message_create(client, message):
         await client.message_create(message.channel, 'Lmfao')
 
 
-async def owner_only_handler(client, message, command, check):
+async def owner_only_handler(client, message, command, _check):
     await client.message_create(message.channel, f'You must be the owner of the bot to use the `{command}` command.')
 
 
@@ -77,7 +77,8 @@ async def av(client, message, user: FlaggedAnnotation('user', ConverterFlag.user
 
 @Bcom.commands
 async def separate(client, message, sep, *args):
-    """separates the words using the given separator\nUsage: ``n!separate (separator) (the text you want to be separated)"""
+    """separates the words using the given separator
+    Usage: ``n!separate (separator) (the text you want to be separated)"""
     if not args:
         result = 'Nothing to separate'
     else:
@@ -87,16 +88,17 @@ async def separate(client, message, sep, *args):
 
 @Bcom.commands
 async def owo(client, msg, text):
-    """owofies your text\nyou might not see the difference in short text"""
+    """owofies your text
+    you might not see the difference in short text"""
 
     def replace(s, old, new):
         li = s.rsplit(old, 1)
         return new.join(li)
 
-    vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']
+    vowels = 'aeiouAEIOU'
     text = text.replace('L', 'W').replace('l', 'w')
     text = text.replace('R', 'W').replace('r', 'w')
-    smileys = [';;w;;', '^w^', '>w<', 'UwU', '(・`ω\´・)', '(´・ω・\`)']
+    smileys = (';;w;;', '^w^', '>w<', 'UwU', r'(・`ω\´・)', r'(´・ω・\`)')
     text = replace(text, '!', f'! {random.choice(smileys)}')
     text = replace(text, '?', '? owo')
     text = replace(text, '.', f'. {random.choice(smileys)}')

@@ -1,11 +1,12 @@
-#original Idea by TheAnonyMouse1337
-#import stuff here
-#import db
+# original Idea by TheAnonyMouse1337
+# import stuff here
+# import db
 
-#class call():
+# class call():
 #    
 #    async def admin_only_handler(client, message, command, check):
-#        await client.message_create(message.channel, f'You must be the owner of the bot to use the `{command}` command.')
+#        await client.message_create(message.channel, f'You must be the owner of the bot '
+#                                                     f'to use the `{command}` command.')
 #    
 #    @Bcom.commands(checks=[checks.admin_only(handler=admin_only_handler)])
 #    async def register(self, msg):
@@ -18,7 +19,9 @@
 #        add this vc channel where the user is currently
 #        id to db phonelist also add other stuff
 #         
-#       await client.message_create(message.channel, "the channel {vc channel id} is now registered as the server's Phone. you will receive  phone request calls in #channel")
+#       await client.message_create(message.channel, "the channel {vc channel id} is now registered "
+#                                                    "as the server's Phone. you will receive  phone "
+#                                                    "request calls in #channel.")
 #       
 #    @Bcom.commands()
 #    async def contacts(self, msg, vc channel):
@@ -41,7 +44,8 @@
 #            return
 #        
 #        if not msg.author in registered vc:       
-#            await client.message_create(message.channel, "you can only call people if you are on the vc {the registered vc}")
+#            await client.message_create(message.channel, "you can only call people if you are "
+#                                                         "on the vc {the registered vc}")
 #            return
 #            
 #        if there is a call on going:
@@ -49,14 +53,17 @@
 #            return
 #        
 #        if name not in db:
-#            await client.message_create(message.channel, "We cant find {name} plaese try again or check your name input ")
+#            await client.message_create(message.channel, "We cant find {name} "
+#                                                         "please try again or check your name input ")
 #            return
 #      
 #        if there is a call on going on the other side:
 #            await send there is a call on going on {name} Right now please try again later
 #            return
 #            
-#        await client.message_create(name.server.channel, "@admin there is a join request by {msg.author} to join the connection {name} please type accept or decline") add reaction yes or no
+#        await client.message_create(name.server.channel, "@admin there is a join request by {msg.author} "
+#                                                         "to join the connection {name} please type accept or decline")
+#        add reaction yes or no
 #        
 #        on reaction add
 #        if author is not on a vc
@@ -73,4 +80,4 @@
 #        if did not answer:
 #            msg the other server telling that the admin did not reply
 #            return
-#   
+#

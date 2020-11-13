@@ -40,8 +40,11 @@ async def source(client: Client, message: Message, command: str):
     await client.message_create(message.channel, '```py\n' + code + '\n```')
 
 
-@Reimu.commands
-class lookup(SEQUENTIAL_ASK_NEXT): #TODO:- Replace this class with the userinfo command
+# @Reimu.commands
+class Lookup(SEQUENTIAL_ASK_NEXT):  # TODO:- Replace this class with the userinfo command
+    def __init__(self):
+        self.message_sent = None
+
     async def __call__(self, client: Client, message: Message, user: User):
         await self._exec(client, message, user)
 
@@ -67,7 +70,7 @@ class lookup(SEQUENTIAL_ASK_NEXT): #TODO:- Replace this class with the userinfo 
 
 
 @ALL.commands
-async def command_error(client, message, command, content, err):
+async def command_error(_client, _message, _command, _content, err):
     if isinstance(err, EscapedException):
         return print(err.error)
     raise err

@@ -5,14 +5,9 @@ from hata.ext.extension_loader import EXTENSION_LOADER
 
 import config
 
-Reimu = Client(config.REIMU_TOKEN)
-Reimu.name = 'Reimu'
-
-Bcom = Client(config.BCOM_TOKEN)
-Bcom.name = 'Bcom'
-
-Astra = Client(config.ASTRA_TOKEN)
-Astra.name = 'Astra'
+Reimu = Client(config.REIMU_TOKEN, name='Reimu')
+Bcom = Client(config.BCOM_TOKEN, name='Bcom')
+Astra = Client(config.ASTRA_TOKEN, name='Astra')
 
 TO_LOAD = ['bcom', 'reimu', 'astra', 'common']
 

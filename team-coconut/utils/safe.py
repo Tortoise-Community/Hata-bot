@@ -4,7 +4,7 @@ from hata.ext.commands import utils
 from utils.utils import EscapedException
 
 
-class setup_ext_safe_commands:
+class SetupExternalSafeCommands:
     def __init__(self, client):
         client.safe_message_create = self.safe_message_create
         client.safe_reaction_add = self.safe_reaction_add
@@ -56,13 +56,14 @@ class setup_ext_safe_commands:
             raise EscapedException(err, 'send_message')
         print(err)
 
-    async def safe_wait_for(self, type, message, function, timeout):
+    @staticmethod
+    async def safe_wait_for(type_, message, function, timeout):
         for _client in CLIENTS:
             perms = message.channel.cached_permissions_for(_client)
             if perms.can_read_message_history:
-                if type == 'reaction':
+                if type_ == 'reaction':
                     return await utils.wait_for_reaction(_client, message, function, timeout)
-                elif type == 'message':
+                elif type_ == 'message':
                     return await utils.wait_for_message(_client, message.channel, function, timeout)
                 else:
                     raise NotImplemented()
