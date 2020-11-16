@@ -3,7 +3,8 @@ import os
 from typing import List, Set, cast
 from types import ModuleType
 from PIL import Image
-from hata import ReuBytesIO, Color
+from hata import ReuBytesIO, Color, Embed
+from config import CLIENT_INFO
 
 from hata.discord import Message, MessageIterator, CLIENTS
 from hata.ext.commands.command import checks
@@ -14,8 +15,8 @@ from config import MapleClient
 
 clearing: Set[int] = set()
 
-Inosuke = CLIENTS[int(os.getenv("CLIENT_IDS").split(',')[0])]
-Zenitsu = CLIENTS[int(os.getenv("CLIENT_IDS").split(',')[1])]
+Inosuke = CLIENTS[CLIENT_INFO[0]['ID']]
+Zenitsu = CLIENTS[CLIENT_INFO[1]['ID']]
 
 @Inosuke.events
 async def message_create(client, message):
@@ -55,12 +56,18 @@ async def cleartext(client: MapleClient, message: Message):
 	finally:
 		clearing.remove(message.channel.id)
 
+"""Ping command, gets the latency in ms."""
+async def ping(client: MapleClient, message: Message):
+	embed = Embed(title='Pong! 🏓', description=f'Ping is {round(client.gateway.latency * 1000)} ms')
+	await client.message_create(message.channel, embed=embed)
 
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.commands(checks=[checks.owner_only()])(cleartext)
+		client.commands()(ping)
 
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:
 		client.commands.remove(cleartext)
+		client.commands.remove(ping)
