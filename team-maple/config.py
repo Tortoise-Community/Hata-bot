@@ -10,7 +10,7 @@ from hata.discord.parsers import EventDescriptor, _EventHandlerManager
 from hata.ext.commands import setup_ext_commands, CommandProcesser
 from hata.backend import KeepType, sleep
 
-from env import CLIENT_INFO, ClientInfoDict
+from env import PREFIX, CLIENT_INFO, ClientInfoDict
 load_dotenv()
 
 
@@ -74,16 +74,21 @@ def create_clients() -> None:
 			for id in (os.getenv('POTATO_CHANNEL_IDS') or '').split(',')
 			if id.strip()
 		]
+		client_prefix = os.getenv('CLIENT_PREFIX') or PREFIX
+		client_prefixes = [
+			prefix.strip() or client_prefix
+			for prefix in (os.getenv('CLIENT_PREFIXES') or '').split(',')
+		]
 		for i, token in enumerate(client_tokens):
 			client_info.append({
 				'ID': client_ids[i],
 				'TOKEN': token,
-				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) == i+1 else None
+				'PREFIX': client_prefixes[i],
+				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) == i + 1 else None,
 			})
 
 	print('Attemping to create {} MapleClients...'.format(len(client_info)))
 	for info in client_info:
 		potato_channel = ChannelText.precreate(info['POTATO_CHANNEL_ID']) if info['POTATO_CHANNEL_ID'] else None
 		client = MapleClient(info['TOKEN'], client_id=info['ID'])._init(potato_channel)
-		# TODO - parameterize prefix
-		setup_ext_commands(client, '.')
+		setup_ext_commands(client, info['PREFIX'] if 'PREFIX' in info else PREFIX)

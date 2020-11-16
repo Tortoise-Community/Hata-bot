@@ -9,9 +9,16 @@ from hata.ext.extension_loader import EXTENSION_LOADER
 from config import create_clients, MapleClient
 
 
+logged_in = 0
+
 async def ready(client: MapleClient):
-	# TODO - output info for client
-	print(f'{client:f} logged in.')
+	global logged_in
+	logged_in += 1
+	print(f'\n\t{client!r}')
+	print(f'Prefix        : {client.command_processer.prefix}')
+	print(f'Potato Channel: {client.potato_channel!r}')
+	if logged_in == len(CLIENTS):
+		print('\nAll clients logged in')
 
 
 if __name__ == '__main__':
