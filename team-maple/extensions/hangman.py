@@ -40,6 +40,18 @@ WORDBANK = [
 RANDOM_LETTER_ORDER = 'ETAOINSHRDLUCMFWYPVBGKQJXZ'.lower()
 BLANK_LETTER = '_'
 
+ASCII_IMAGE = ('  +---+\n  |   |\n', '      |\n=========')
+ASCII_FRAMES = (
+	'      |\n      |\n      |\n',
+	'  O   |\n      |\n      |\n',
+	'  O   |\n  |   |\n      |\n',
+	'  O   |\n /|   |\n      |\n',
+	'  O   |\n /|\\  |\n      |\n',
+	'  O   |\n /|\\  |\n /    |\n',
+	'  O   |\n /|\\  |\n / \\  |\n'
+)
+
+
 START_HANGMAN_MESSAGE = 'Who wants to play hangman?'
 START_HANGMAN_EMOJI_NAME = 'raised_hand'
 START_HANGMAN_EMOJI = BUILTIN_EMOJIS[START_HANGMAN_EMOJI_NAME]
@@ -185,13 +197,13 @@ async def message_create(client: MapleClient, message: Message):
 	possible_words = [
 		word.lower()
 		for word in WORDBANK if
-		len(word) == len(message.embeds[0].description.split('```')[1].strip())
+		len(word) == len(message.embeds[0].description.split('```')[3].strip())
 	]
 	tried: List[str] = []
 	current: List[str] = []
 	while True:
 		embed = message.embeds[0]
-		current = list(embed.description.split('```')[1].strip().lower())
+		current = list(embed.description.split('```')[3].strip().lower())
 		# Filter down possible words
 		for word in possible_words[:]:
 			# Remove word if a correct letter is not in the word at the correct position
