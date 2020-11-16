@@ -1,5 +1,5 @@
 import functools
-from typing import Any, Callable, Set, List, Optional
+from typing import Any, Callable, Set, Dict, Optional
 
 
 from hata.discord import Message, EventWaitforBase, Client, KOKORO, ChannelBase
