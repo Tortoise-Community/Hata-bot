@@ -3,6 +3,7 @@ from types import ModuleType
 
 
 from hata.discord import Message, MessageIterator, CLIENTS
+from hata.ext.commands.command import checks
 
 
 from config import MapleClient
@@ -31,7 +32,7 @@ async def cleartext(client: MapleClient, message: Message):
 
 def setup(_: ModuleType):
 	for client in CLIENTS:
-		client.commands(cleartext)
+		client.commands(checks=[checks.owner_only()])(cleartext)
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:

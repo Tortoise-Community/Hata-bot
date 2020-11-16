@@ -2,8 +2,8 @@ import time
 import os
 
 
-from hata.discord import KOKORO, CLIENTS, start_clients, stop_clients
-from hata.discord.message import Message
+from hata.discord import KOKORO, CLIENTS, start_clients, stop_clients, Message
+from hata.ext.commands.command import checks
 from hata.ext.extension_loader import EXTENSION_LOADER, ExtensionError
 
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	create_clients()
 	for client in CLIENTS:
 		client.events(ready)
-		client.commands(reload)
+		client.commands(checks=[checks.owner_only()])(reload)
 
 	# Load all `*.py` extensions in the `extensions` folder
 	for filename in os.listdir('extensions'):
