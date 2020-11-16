@@ -1,11 +1,11 @@
 import random
 import math
-from typing import List, Dict
+from typing import List, Dict, Set
 from types import ModuleType
 
 
-from hata.discord import Message, CLIENTS
-from hata.discord.emoji import BUILTIN_EMOJIS
+from hata.discord import Message, CLIENTS, BUILTIN_EMOJIS
+from hata.backend import sleep
 from hata.ext.commands import utils
 
 
@@ -31,13 +31,19 @@ def is_msg_numeric(msg: Message):
 	except ValueError:
 		return False
 
+human_games: Set[int] = set()
+
 
 @make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
+	# Sleep to provide enough time for human_games to get message ID added to it
+	await sleep(1)
+
 	# Stop if number already being guessed, is self, or not a number guessing prompt
 	if (
 		client.id == message.author.id
 		or not message.content.lower().startswith(START_TEMPLATE[0].lower())
+		or message.id in human_games
 	):
 		return
 
@@ -83,14 +89,16 @@ async def message_create(client: MapleClient, message: Message):
 		await client.message_create(message.channel, "Guess I'll never know what the number was...")
 
 
-async def guess_number(client: MapleClient, message: Message, lowest: int = 1, highest: int = 10):
+async def guess_number(client: MapleClient, message: Message, lowest: int = 1, highest: int = 10, human_only: int = 0):
 	"""Start a number-guessing game"""
 	# Generate message and output prompt
 	number = random.randint(lowest, highest)
-	await client.message_create(
+	prompt = await client.message_create(
 		message.channel,
 		str(lowest).join(START_TEMPLATE) + str(highest)
 	)
+	if human_only:
+		human_games.add(prompt.id)
 
 	try:
 		# ID -> Guess Count
@@ -125,6 +133,9 @@ async def guess_number(client: MapleClient, message: Message, lowest: int = 1, h
 		)
 	except TimeoutError:
 		await client.message_create(message.channel, 'Well the number was {}'.format(number))
+	finally:
+		if human_only:
+			human_games.remove(prompt.id)
 
 
 def setup(_: ModuleType):

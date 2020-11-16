@@ -1,6 +1,6 @@
 import random
 import re
-from typing import Optional, List
+from typing import Optional, List, Set
 from types import ModuleType
 
 
@@ -82,8 +82,9 @@ def generate_hangman_embed(
 		embed.description = '{:m} lost...{}'.format(user, msg_and_word.format(''.join(word)))
 	return embed
 
+human_games: Set[int] = set()
 
-async def hangman(client: MapleClient, message: Message, guessing_word: str = ''):
+async def hangman(client: MapleClient, message: Message, human_only: int = 0, guessing_word: str = ''):
 	"""Start a game of hangman"""
 	await client.typing(message.channel)
 
@@ -93,6 +94,9 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 
 	# Create prompt and wait for user to play
 	hangman_msg = await client.message_create(message.channel, START_HANGMAN_MESSAGE)
+	if human_only:
+		human_games.add(hangman_msg.id)
+
 	await client.reaction_add(hangman_msg, START_HANGMAN_EMOJI)
 	try:
 		event: ReactionAddEvent = await utils.wait_for_reaction(
@@ -102,6 +106,8 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 			GUESS_WAIT_TIMEOUT
 		)
 	except TimeoutError:
+		if human_only:
+			human_games.remove(hangman_msg.id)
 		return await client.message_edit(hangman_msg, 'Guess nobody wants to play hangman...')
 	finally:
 		await client.reaction_delete_emoji(hangman_msg, START_HANGMAN_EMOJI)
@@ -153,12 +159,22 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 			hangman_msg,
 			embed=generate_hangman_embed(player, word, current, lives, won, 'The game was abandoned')
 		)
+	finally:
+		if human_only:
+			human_games.remove(hangman_msg.id)
 
 
 @make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
+	# Sleep to provide enough time for human_games to get message ID added to it
+	await sleep(1)
+
 	# If already playing, not a hangman prompt, or is self, return
-	if message.content != START_HANGMAN_MESSAGE or message.author.id == client.id:
+	if (
+		message.content != START_HANGMAN_MESSAGE
+		or message.author.id == client.id
+		or message.id in human_games
+	):
 		return
 
 	await sleep(random.uniform(PLAY_HANGMAN_RESPOND_MIN, PLAY_HANGMAN_RESPOND_MAX))

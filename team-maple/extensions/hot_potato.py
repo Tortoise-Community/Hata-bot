@@ -45,7 +45,8 @@ ActivePotato = TypedDict('ActivePotato', {
 	'channel': ChannelText,
 	'exploding_at': float,
 	'client': MapleClient,
-	'message': Message
+	'message': Message,
+	'human_only': bool
 })
 active_potato: Optional[ActivePotato] = None
 potato_lock = Lock(KOKORO)
@@ -54,7 +55,8 @@ potato_lock = Lock(KOKORO)
 async def potato(
 	client: MapleClient,
 	message: Message,
-	guild: Converter(Guild, ConverterFlag.guild_default, default_code='message.guild')
+	guild: Converter(Guild, ConverterFlag.guild_all, default_code='message.guild'),
+	human_only: int = 0
 ) -> Any:
 	"""Start a game of start potato
 
@@ -94,7 +96,8 @@ async def potato(
 		'channel': channel,
 		'exploding_at': exploding_at,
 		'client': other_client,
-		'message': potato_msg
+		'message': potato_msg,
+		'human_only': bool(human_only)
 	}
 	return KOKORO.create_task(potato_countdown())
 
@@ -200,7 +203,7 @@ async def message_create(client: MapleClient, message: Message):
 
 		await sleep(random.uniform(POTATO_TOSS_MIN, POTATO_TOSS_MAX))
 		# If the potato has exploded or changed message, don't toss
-		if not active_potato or active_potato['message'].id != message.id:
+		if not active_potato or active_potato['message'].id != message.id or active_potato['human_only']:
 			return
 
 		await client.typing(message.channel)

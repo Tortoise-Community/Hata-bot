@@ -114,9 +114,10 @@ Allows for playing of Hot Potato between all the attached clients
 
 #### Commands
 
-- `potato [guild=current]`
+- `potato [guild=current] [human_only=false]`
   - Spawns a hot potato
   - If guild is not provided, spawns it in the current guild
+  - A truthy value can be provided to make it so only humans can play
 - `toss`
   - Tosses a potato from the current channel to another one
 
@@ -191,8 +192,9 @@ Allows for the telling of knock-knock jokes
 
 #### Commands
 
-- `knock_knock`
+- `knock_knock [human_only=false]`
   - Starts telling a random knock knock joke
+  - A truthy value can be provided to make it so only humans can play
 
 #### Walkthrough
 
@@ -206,8 +208,9 @@ Allows playing Hangman with users or bots
 
 #### Commands
 
-- `hangman [guessing_word=random]`
+- `hangman [human_only=false] [guessing_word=random]`
   - Prompts to start a game of hangman
+  - A truthy value can be provided to make it so only humans can play
   - If no word is provided, randomly use one from the wordlist
 
 #### Walkthrough

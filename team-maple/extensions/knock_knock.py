@@ -1,9 +1,10 @@
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Set
 from types import ModuleType
 
 
 from hata.discord import Message, CLIENTS, BUILTIN_EMOJIS
+from hata.backend import sleep
 from hata.ext.commands import utils
 
 
@@ -45,10 +46,14 @@ BLANK_WHO_TEMPLATE = '{} who?'
 
 @make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
+	# Sleep to provide enough time for human_games to get message ID added to it
+	await sleep(1)
+
 	# If joke already handled, is self, or not a knock knock prompt, return
 	if (
 		client.id == message.author.id
 		or START_MESSAGE.lower() not in message.content.lower()
+		or message.id in human_jokes
 	):
 		return
 
@@ -82,10 +87,14 @@ async def message_create(client: MapleClient, message: Message):
 		await client.message_create(message.channel, "Guess I'll never hear the end of that joke...")
 
 
-async def knock_knock(client: MapleClient, message: Message):
+human_jokes: Set[int] = set()
+
+async def knock_knock(client: MapleClient, message: Message, human_only: int = 0):
 	"""Tell a knock knock joke"""
 	joke_setup, joke_punchline = random.choice(KNOCK_KNOCK_JOKES)
-	await client.message_create(message.channel, START_MESSAGE)
+	prompt = await client.message_create(message.channel, START_MESSAGE)
+	if human_only:
+		human_jokes.add(prompt.id)
 
 	try:
 		# Wait for anybody to say "Who's there?"
@@ -111,7 +120,9 @@ async def knock_knock(client: MapleClient, message: Message):
 		await client.message_create(message.channel, joke_punchline)
 	except TimeoutError:
 		await client.message_create(message.channel, 'Guess nobody wanted to hear the joke...')
-
+	finally:
+		if human_only:
+			human_jokes.remove(prompt.id)
 
 def setup(_: ModuleType):
 	for client in CLIENTS:
