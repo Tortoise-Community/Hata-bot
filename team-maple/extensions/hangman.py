@@ -50,6 +50,9 @@ ASCII_FRAMES = (
 )
 
 
+PLAY_HANGMAN_RESPOND_MIN = 2
+PLAY_HANGMAN_RESPOND_MAX = 5
+
 START_HANGMAN_MESSAGE = 'Who wants to play hangman?'
 START_HANGMAN_EMOJI_NAME = 'raised_hand'
 START_HANGMAN_EMOJI = BUILTIN_EMOJIS[START_HANGMAN_EMOJI_NAME]
@@ -57,16 +60,16 @@ START_HANGMAN_EMOJI = BUILTIN_EMOJIS[START_HANGMAN_EMOJI_NAME]
 GUESS_WAIT_TIMEOUT = 30
 
 
-def generate_hangman_embed(word: List[str], current: List[str], lives: int, won: Optional[bool], msg: str = ''):
+def generate_hangman_embed(user: UserBase, word: List[str], current: List[str], lives: int, won: Optional[bool], msg: str = ''):
 	full_msg = '\n' + msg if msg else ''
-	msg_and_word = '{}```\n{{}}\n```'.format(full_msg)
+	msg_and_word = '{}```\n{}\n```\n```\n{{}}\n```'.format(full_msg, ASCII_FRAMES[len(ASCII_FRAMES) - 1 - lives].join(ASCII_IMAGE))
 	embed = Embed('Hangman')
 	if won is None:
 		embed.description = '{} lives remaining...{}'.format(lives, msg_and_word.format(''.join(current)))
 	elif won:
-		embed.description = 'You won with {} lives remaining!{}'.format(lives, msg_and_word.format(''.join(current)))
+		embed.description = '{:m} won with {} lives remaining!{}'.format(user, lives, msg_and_word.format(''.join(current)))
 	else:
-		embed.description = 'You lost...{}'.format(msg_and_word.format(''.join(word)))
+		embed.description = '{:m} lost...{}'.format(user, msg_and_word.format(''.join(word)))
 	return embed
 
 
@@ -93,14 +96,14 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 	finally:
 		await client.reaction_delete_emoji(hangman_msg, START_HANGMAN_EMOJI)
 
-	player_id = event.user.id
+	player = event.user
 	random_word = guessing_word or random.choice(WORDBANK)
 	word = list(random_word)
 	current: List[str] = list(re.sub('[a-zA-Z]', BLANK_LETTER, random_word))
 	lives = 6
 	won: Optional[bool] = None
 
-	await client.message_edit(hangman_msg, '', embed=generate_hangman_embed(word, current, lives, won))
+	await client.message_edit(hangman_msg, '', embed=generate_hangman_embed(player, word, current, lives, won))
 
 	try:
 		while won is None:
@@ -108,7 +111,7 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 			guess_msg = await utils.wait_for_message(
 				client,
 				message.channel,
-				lambda msg: msg.author.id == player_id and len(msg.content) == 1 and msg.content[0].isalpha(),
+				lambda msg: msg.author == player and len(msg.content) == 1 and msg.content[0].isalpha(),
 				GUESS_WAIT_TIMEOUT
 			)
 			await client.typing(message.channel)
@@ -133,12 +136,12 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 				elif lives == 0:
 					won = False
 
-			await client.message_edit(hangman_msg, embed=generate_hangman_embed(word, current, lives, won, response))
+			await client.message_edit(hangman_msg, embed=generate_hangman_embed(player, word, current, lives, won, response))
 	except TimeoutError:
 		won = False
 		await client.message_edit(
 			hangman_msg,
-			embed=generate_hangman_embed(word, current, lives, won, 'The game was abandoned')
+			embed=generate_hangman_embed(player, word, current, lives, won, 'The game was abandoned')
 		)
 
 
@@ -148,8 +151,7 @@ async def message_create(client: MapleClient, message: Message):
 	if message.content != START_HANGMAN_MESSAGE or message.author.id == client.id:
 		return
 
-	# TODO - parameterize
-	await sleep(random.uniform(2, 5))
+	await sleep(random.uniform(PLAY_HANGMAN_RESPOND_MIN, PLAY_HANGMAN_RESPOND_MAX))
 	# If the offer has been retracted, return
 	if START_HANGMAN_EMOJI not in message.reactions:
 		return
@@ -176,6 +178,10 @@ async def message_create(client: MapleClient, message: Message):
 		current = list(embed.description.split('```')[3].strip().lower())
 		# Filter down possible words
 		for word in possible_words[:]:
+			# Remove word if tried letter in word but not in current
+			if any(letter for letter in tried if letter not in current and letter in word):
+				possible_words.remove(word)
+				continue
 			# Remove word if a correct letter is not in the word at the correct position
 			for i, letter in enumerate(current):
 				if letter == BLANK_LETTER:
