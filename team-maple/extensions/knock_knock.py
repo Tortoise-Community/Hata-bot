@@ -1,3 +1,4 @@
+import os
 import random
 from typing import List, Tuple, Set
 from types import ModuleType
@@ -38,6 +39,13 @@ KNOCK_KNOCK_JOKES: List[Tuple[str, str]] = [
 	("Police", "Police let us in, it's cold out here!"),
 	("Amarillo", "Amarillo nice guy.")
 ]
+
+try:
+	with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'knock_knock_jokelist.txt'), 'r') as jokelist_file:
+		KNOCK_KNOCK_JOKES = [tuple(joke.split('|')) for joke in jokelist_file.read().split('\n') if joke.strip()]
+	print(f'{len(KNOCK_KNOCK_JOKES)} knock-knock jokes loaded from joke list')
+except:
+	pass
 
 START_MESSAGE = 'Knock Knock'
 WHO_MESSAGE = "Who's there?"

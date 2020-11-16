@@ -202,6 +202,10 @@ Allows for the telling of knock-knock jokes
 
 Players can also tell Knock Knock jokes directly to any visible clients by saying `Knock Knock`, then the setup phrase, and finally the punchline.
 
+***
+
+Knock-Knock jokes sourced from various locations, and are stored in [`extensions/knock_knock_jokelist.txt`](/extensions/knock_knock_jokelist.txt) split by `|`
+
 ### Hangman
 
 Allows playing Hangman with users or bots
@@ -221,7 +225,7 @@ While a game is active, the player can enter single letters to guess - depending
 
 ***
 
-Dictionary of words to choose from is sourced from:
+[Dictionary of words to choose](/extensions/hangman_wordlist.txt) from is sourced from:
 
 - https://raw.githubusercontent.com/michaeldickens/Hangman/master/wordlist.txt
 - https://raw.githubusercontent.com/Tom25/Hangman/master/wordlist.txt
