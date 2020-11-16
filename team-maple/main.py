@@ -4,6 +4,7 @@ import os
 
 from hata.discord import KOKORO, CLIENTS, start_clients, stop_clients, Message
 from hata.ext.commands.command import checks
+from hata.ext.commands.helps.subterranean import SubterraneanHelpCommand
 from hata.ext.extension_loader import EXTENSION_LOADER, ExtensionError
 
 
@@ -40,6 +41,7 @@ if __name__ == '__main__':
 	for client in CLIENTS:
 		client.events(ready)
 		client.commands(checks=[checks.owner_only(), is_exclusive_command()])(reload)
+		client.commands(SubterraneanHelpCommand(), 'help', checks=[is_exclusive_command()])
 
 	# Load all `*.py` extensions in the `extensions` folder
 	for filename in os.listdir('extensions'):
