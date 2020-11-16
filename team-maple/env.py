@@ -1,5 +1,6 @@
 from typing import TypedDict, List, Optional
 
+
 ClientInfoDict = TypedDict('ClientInfoDict', {
 	'ID': int,
 	'TOKEN': str,
@@ -10,5 +11,5 @@ ClientInfoDict = TypedDict('ClientInfoDict', {
 # Default prefix for all bots
 PREFIX = 'm.'
 
-# Add a dict containing the ID, TOKEN, and POTATO_CHANNEL_ID for each client
+# Add a dict containing the ID, TOKEN, and optional PREFIX and POTATO_CHANNEL_ID, for each client
 CLIENT_INFO: List[ClientInfoDict] = []

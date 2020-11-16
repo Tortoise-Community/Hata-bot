@@ -1,19 +1,15 @@
-import random
-import os
+from PIL import Image
 from typing import List, Set, cast
 from types import ModuleType
-from PIL import Image
-from hata import ReuBytesIO, Color, Embed
-from config import CLIENT_INFO
 
-from hata.discord import Message, MessageIterator, CLIENTS
+
+from hata.discord import Message, MessageIterator, Color, Embed, CLIENTS
+from hata.backend import ReuBytesIO
 from hata.ext.commands.command import checks
 
 
-from config import MapleClient
+from config import MapleClient, CLIENT_INFO
 
-
-clearing: Set[int] = set()
 
 Inosuke = CLIENTS[CLIENT_INFO[0]['ID']]
 Zenitsu = CLIENTS[CLIENT_INFO[1]['ID']]
@@ -38,9 +34,13 @@ async def message_create(client, message):
 	except:
 		return
 
+
+clearing: Set[int] = set()
+
+
 async def cleartext(client: MapleClient, message: Message):
-	"""Clear all text in current channel"""
-	# If command has already been responded to, return
+	"""Delete all non-pinned messages in the current channel"""
+	# If channel is already being cleared, return
 	if message.channel.id in clearing:
 		return
 	clearing.add(message.channel.id)
@@ -50,16 +50,20 @@ async def cleartext(client: MapleClient, message: Message):
 			info = cast(Message, await client.message_create(message.channel, 'Collecting messages...'))
 			messages: List[Message] = []
 			async for history_message in MessageIterator(client, message.channel):
+				if history_message.pinned:
+					continue
 				messages.append(history_message)
 			await client.message_edit(info, f'Deleting {len(messages)} messages')
 			await client.message_delete_multiple(messages)
 	finally:
 		clearing.remove(message.channel.id)
 
-"""Ping command, gets the latency in ms."""
+
 async def ping(client: MapleClient, message: Message):
+	"""Gets the latency in ms."""
 	embed = Embed(title='Pong! 🏓', description=f'Ping is {round(client.gateway.latency * 1000)} ms')
 	await client.message_create(message.channel, embed=embed)
+
 
 def setup(_: ModuleType):
 	for client in CLIENTS:

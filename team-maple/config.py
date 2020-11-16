@@ -92,6 +92,6 @@ def create_clients() -> None:
 	"""Create all clients"""
 	print('Attemping to create {} MapleClients...'.format(len(CLIENT_INFO)))
 	for info in CLIENT_INFO:
-		potato_channel = ChannelText.precreate(info['POTATO_CHANNEL_ID']) if info['POTATO_CHANNEL_ID'] else None
+		potato_channel = ChannelText.precreate(info['POTATO_CHANNEL_ID']) if 'POTATO_CHANNEL_ID' in info else None
 		client = MapleClient(info['TOKEN'], client_id=info['ID'])._init(potato_channel)
 		setup_ext_commands(client, info['PREFIX'] if 'PREFIX' in info else PREFIX)
