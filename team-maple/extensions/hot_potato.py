@@ -1,6 +1,6 @@
 import time
 import random
-from typing import TypedDict, Optional, Any
+from typing import TypedDict, Optional, Any, List
 from types import ModuleType
 
 from hata.discord import KOKORO, CLIENTS, Message, Guild, Color, Embed, EmbedFooter, ChannelText
@@ -18,6 +18,8 @@ POTATO_UPDATE_RATE = 2.5
 # Time to wait before other bots run `.toss`
 POTATO_TOSS_MIN = 1.5
 POTATO_TOSS_MAX = 5
+
+POTATO_CLIENTS: List[MapleClient] = [client for client in CLIENTS if client.potato_channel]
 
 # The currently active hot potato
 ActivePotato = TypedDict('ActivePotato', {
@@ -48,13 +50,16 @@ async def potato(
 	if active_potato:
 		return await client.message_create(message.channel, 'Potato already in play')
 
+	if not [other_client for other_client in POTATO_CLIENTS if other_client.id != client.id]:
+		return await client.message_create(message.channel, 'No other clients playing hot potato')
+
 	# Get client with provided guild
 	if guild != message.guild:
 		# Find client that has a potato channel in the provided guild
 		other_client = next((
 			other_client
-			for other_client in CLIENTS
-			if other_client.potato_channel and other_client.potato_channel.guild == guild
+			for other_client in POTATO_CLIENTS
+			if other_client.potato_channel.guild == guild
 		), None)
 		if not other_client:
 			return await client.message_create(message.channel, 'Guild is not playing hot potato')
@@ -88,11 +93,18 @@ async def potato_countdown():
 		while time.time() < exploding_at:
 			await sleep(POTATO_UPDATE_RATE)
 			async with potato_lock:
-				# TODO - handle if the potato message gets deleted
-				await active_potato['client'].message_edit(
-					active_potato['message'],
-					embed=build_potato_embed(active_potato['exploding_at'])
-				)
+				msg = active_potato['message']
+				embed = build_potato_embed(active_potato['exploding_at'])
+				if msg.deleted:
+					active_potato['message'] = await active_potato['client'].message_create(
+						msg.channel,
+						embed=embed
+					)
+				else:
+					await active_potato['client'].message_edit(
+						msg,
+						embed=embed
+					)
 	else:
 		await sleep(active_potato['exploding_at'] - time.time())
 
@@ -117,13 +129,13 @@ async def toss(client: MapleClient, message: Message) -> Any:
 	async with potato_lock:
 		pool = [
 			other_client
-			for other_client in CLIENTS
-			if other_client.potato_channel and other_client.potato_channel != message.channel
+			for other_client in POTATO_CLIENTS
+			if other_client.potato_channel != message.channel
 		]
 		foreign_pool = [
 			other_client
 			for other_client in pool
-			if other_client.potato_channel and other_client.potato_channel.guild != message.channel.guild
+			if other_client.potato_channel.guild != message.channel.guild
 		]
 		if foreign_pool:
 			pool = foreign_pool
