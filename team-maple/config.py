@@ -84,8 +84,8 @@ def create_clients() -> None:
 			client_info.append({
 				'ID': client_ids[i],
 				'TOKEN': token,
-				'PREFIX': client_prefixes[i] if len(client_prefixes) == i + 1 else client_prefix,
-				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) == i + 1 else None,
+				'PREFIX': client_prefixes[i] if len(client_prefixes) >= i + 1 else client_prefix,
+				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) >= i + 1 else None,
 			})
 
 	print('Attemping to create {} MapleClients...'.format(len(client_info)))
