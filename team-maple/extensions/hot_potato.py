@@ -35,7 +35,7 @@ POTATO_EMBED = EmbedCore.from_data({
 	'description': 'You have the hot potato, which only has {exploding_in:.2f} seconds before it explodes!',
 	'type': 'rich',
 	'footer': {
-		'text': 'Use `.toss` to get rid of it!'
+		'text': 'Use `{}toss` to get rid of it!'
 	},
 	'color': Color.from_html('#B79268')
 })
@@ -87,7 +87,7 @@ async def potato(
 
 	exploding_at = time.time() + POTATO_DURATION
 
-	potato_msg = await other_client.message_create(channel, embed=build_potato_embed(exploding_at))
+	potato_msg = await other_client.message_create(channel, embed=build_potato_embed(other_client, exploding_at))
 	assert potato_msg
 
 	active_potato = {
@@ -111,7 +111,7 @@ async def potato_countdown():
 			await sleep(POTATO_UPDATE_RATE)
 			async with potato_lock:
 				msg = active_potato['message']
-				embed = build_potato_embed(active_potato['exploding_at'])
+				embed = build_potato_embed(active_potato['client'], active_potato['exploding_at'])
 				if msg.deleted:
 					active_potato['message'] = await active_potato['client'].message_create(
 						msg.channel,
@@ -162,7 +162,7 @@ async def toss(client: MapleClient, message: Message) -> Any:
 		active_potato['channel'] = channel
 		active_potato['client'] = other_client
 
-		potato_msg = await other_client.message_create(channel, embed=build_potato_embed(active_potato['exploding_at']))
+		potato_msg = await other_client.message_create(channel, embed=build_potato_embed(other_client, active_potato['exploding_at']))
 		assert potato_msg
 
 		# Store and delete after assigning new message in case potato is about to explode
@@ -173,7 +173,7 @@ async def toss(client: MapleClient, message: Message) -> Any:
 		await client.message_delete(old_potato_msg)
 
 
-def build_potato_embed(exploding_at: float) -> Embed:
+def build_potato_embed(client: MapleClient, exploding_at: float) -> Embed:
 	"""Build potato message embed
 
 	Args:
@@ -184,6 +184,7 @@ def build_potato_embed(exploding_at: float) -> Embed:
 	"""
 	embed = EmbedCore.from_data(POTATO_EMBED.to_data())
 	embed.description = embed.description.format(exploding_in=exploding_at - time.time())
+	embed.footer.text = embed.footer.text.format(client.command_processer.prefix)
 	return embed
 
 
