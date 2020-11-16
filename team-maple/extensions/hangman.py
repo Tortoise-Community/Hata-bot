@@ -72,14 +72,15 @@ def generate_hangman_embed(
 	user: UserBase,
 	word: List[str],
 	current: List[str],
+	incorrect: List[str],
 	lives: int,
 	won: Optional[bool],
 	msg: str = ''
 ):
 	full_msg = '\n' + msg if msg else ''
 	msg_and_word = (
-		'{}```\n{}\n```\n```\n{{}}\n```'
-		.format(full_msg, ASCII_FRAMES[len(ASCII_FRAMES) - 1 - lives].join(ASCII_IMAGE))
+		'{}```\n{}\n```Incorrect: `{}`\n```\n{{}}\n```'
+		.format(full_msg, ASCII_FRAMES[len(ASCII_FRAMES) - 1 - lives].join(ASCII_IMAGE), ', '.join(incorrect or ['']))
 	)
 	embed = Embed('Hangman')
 	if won is None:
@@ -124,10 +125,11 @@ async def hangman(client: MapleClient, message: Message, human_only: int = 0, gu
 	random_word = guessing_word or random.choice(WORDBANK)
 	word = list(random_word)
 	current: List[str] = list(re.sub('[a-zA-Z]', BLANK_LETTER, random_word))
+	incorrect: List[str] = []
 	lives = 6
 	won: Optional[bool] = None
 
-	await client.message_edit(hangman_msg, '', embed=generate_hangman_embed(player, word, current, lives, won))
+	await client.message_edit(hangman_msg, '', embed=generate_hangman_embed(player, word, current, incorrect, lives, won))
 
 	try:
 		while won is None:
@@ -154,18 +156,19 @@ async def hangman(client: MapleClient, message: Message, human_only: int = 0, gu
 						found = True
 				if not found:
 					lives -= 1
+					incorrect.append(letter)
 
 				if word == current:
 					won = True
 				elif lives == 0:
 					won = False
 
-			await client.message_edit(hangman_msg, embed=generate_hangman_embed(player, word, current, lives, won, response))
+			await client.message_edit(hangman_msg, embed=generate_hangman_embed(player, word, current, incorrect, lives, won, response))
 	except TimeoutError:
 		won = False
 		await client.message_edit(
 			hangman_msg,
-			embed=generate_hangman_embed(player, word, current, lives, won, 'The game was abandoned')
+			embed=generate_hangman_embed(player, word, current, incorrect, lives, won, 'The game was abandoned')
 		)
 	finally:
 		if human_only:
