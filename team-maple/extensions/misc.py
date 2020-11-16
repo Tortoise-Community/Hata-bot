@@ -35,7 +35,7 @@ def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.commands(checks=[checks.owner_only()])(cleartext)
 
+
 def teardown(_: ModuleType):
 	for client in CLIENTS:
 		client.commands.remove(cleartext)
-

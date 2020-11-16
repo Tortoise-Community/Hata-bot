@@ -60,9 +60,19 @@ START_HANGMAN_EMOJI = BUILTIN_EMOJIS[START_HANGMAN_EMOJI_NAME]
 GUESS_WAIT_TIMEOUT = 30
 
 
-def generate_hangman_embed(user: UserBase, word: List[str], current: List[str], lives: int, won: Optional[bool], msg: str = ''):
+def generate_hangman_embed(
+	user: UserBase,
+	word: List[str],
+	current: List[str],
+	lives: int,
+	won: Optional[bool],
+	msg: str = ''
+):
 	full_msg = '\n' + msg if msg else ''
-	msg_and_word = '{}```\n{}\n```\n```\n{{}}\n```'.format(full_msg, ASCII_FRAMES[len(ASCII_FRAMES) - 1 - lives].join(ASCII_IMAGE))
+	msg_and_word = (
+		'{}```\n{}\n```\n```\n{{}}\n```'
+		.format(full_msg, ASCII_FRAMES[len(ASCII_FRAMES) - 1 - lives].join(ASCII_IMAGE))
+	)
 	embed = Embed('Hangman')
 	if won is None:
 		embed.description = '{} lives remaining...{}'.format(lives, msg_and_word.format(''.join(current)))
@@ -223,6 +233,7 @@ def setup(_: ModuleType):
 		client.events(MessageEditWaitfor)
 		client.events(message_create)
 		client.commands(checks=[is_exclusive_command()])(hangman)
+
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:

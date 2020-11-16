@@ -132,6 +132,7 @@ def setup(_: ModuleType):
 		client.events(message_create)
 		client.commands(checks=[is_exclusive_command()])(guess_number)
 
+
 def teardown(_: ModuleType):
 	for client in CLIENTS:
 		client.events.remove(message_create)

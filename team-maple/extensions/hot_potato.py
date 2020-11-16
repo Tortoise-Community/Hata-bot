@@ -51,7 +51,6 @@ active_potato: Optional[ActivePotato] = None
 potato_lock = Lock(KOKORO)
 
 
-
 async def potato(
 	client: MapleClient,
 	message: Message,
@@ -208,6 +207,7 @@ async def message_create(client: MapleClient, message: Message):
 
 		await other_client.command_processer.commands[toss.__name__](other_client, msg, '')
 
+
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
@@ -216,6 +216,7 @@ def setup(_: ModuleType):
 			potato_channel_check = checks.is_channel(client.potato_channel)
 			client.commands(checks=[potato_channel_check, is_exclusive_command()])(toss)
 			client.commands(checks=[potato_channel_check, is_exclusive_command()])(potato)
+
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:

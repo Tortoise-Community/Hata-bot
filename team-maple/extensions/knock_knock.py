@@ -43,7 +43,6 @@ WHO_MESSAGE = "Who's there?"
 BLANK_WHO_TEMPLATE = '{} who?'
 
 
-
 @make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
 	# If joke already handled, is self, or not a knock knock prompt, return
@@ -82,6 +81,7 @@ async def message_create(client: MapleClient, message: Message):
 	except TimeoutError:
 		await client.message_create(message.channel, "Guess I'll never hear the end of that joke...")
 
+
 async def knock_knock(client: MapleClient, message: Message):
 	"""Tell a knock knock joke"""
 	joke_setup, joke_punchline = random.choice(KNOCK_KNOCK_JOKES)
@@ -117,6 +117,7 @@ def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
 		client.commands(checks=[is_exclusive_command()])(knock_knock)
+
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:

@@ -14,6 +14,7 @@ from utils import is_exclusive_command
 
 logged_in = 0
 
+
 async def ready(client: MapleClient):
 	global logged_in
 	logged_in += 1

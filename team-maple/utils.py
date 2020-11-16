@@ -32,6 +32,7 @@ def make_exclusive_event(func: Callable[[MapleClient, Message, ], Any]):
 class is_exclusive_command(checks._check_base):
 	"""Ensure command message is only executed by one client"""
 	handled: Dict[int, int] = {}
+
 	async def __call__(self, client: Client, message: Message):
 		cid = self.handled.get(message.id, None)
 		if cid == client.id:
