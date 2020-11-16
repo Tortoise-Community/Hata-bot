@@ -4,6 +4,7 @@ from typing import TypedDict, Optional, Any, List
 from types import ModuleType
 
 from hata.discord import KOKORO, CLIENTS, Message, Guild, Color, Embed, EmbedFooter, ChannelText
+from hata.discord.embed import EmbedCore
 from hata.ext.commands import checks, Converter, ConverterFlag
 from hata.backend import Lock, sleep
 
@@ -20,6 +21,23 @@ POTATO_TOSS_MIN = 1.5
 POTATO_TOSS_MAX = 5
 
 POTATO_CLIENTS: List[MapleClient] = [client for client in CLIENTS if client.potato_channel]
+
+# Messages
+ALREADY_IN_PLAY = ('Potato already in play', )
+NO_OTHER_PLAYING_CLIENTS = ('No other clients playing hot potato', )
+PROVIDED_GUILD_NOT_PLAYING = ('Guild is not playing hot potato', )
+NO_POTATO_TO_TOSS = ('There is no potato here', )
+POTATO_JUST_EXPLODED = ('Potato *just* exploded!', )
+
+POTATO_EMBED = EmbedCore.from_data({
+	'title': 'Hot Potato',
+	'description': 'You have the hot potato, which only has {exploding_in:.2f} seconds before it explodes!',
+	'type': 'rich',
+	'footer': {
+		'text': 'Use `.toss` to get rid of it!'
+	},
+	'color': Color.from_html('#B79268')
+})
 
 # The currently active hot potato
 ActivePotato = TypedDict('ActivePotato', {
@@ -48,10 +66,10 @@ async def potato(
 
 	# Prevent spawning if there's already a hot potato active
 	if active_potato:
-		return await client.message_create(message.channel, 'Potato already in play')
+		return await client.message_create(message.channel, *ALREADY_IN_PLAY)
 
 	if not [other_client for other_client in POTATO_CLIENTS if other_client.id != client.id]:
-		return await client.message_create(message.channel, 'No other clients playing hot potato')
+		return await client.message_create(message.channel, *NO_OTHER_PLAYING_CLIENTS)
 
 	# Get client with provided guild
 	if guild != message.guild:
@@ -62,7 +80,7 @@ async def potato(
 			if other_client.potato_channel.guild == guild
 		), None)
 		if not other_client:
-			return await client.message_create(message.channel, 'Guild is not playing hot potato')
+			return await client.message_create(message.channel, *PROVIDED_GUILD_NOT_PLAYING)
 	else:
 		other_client = client
 
@@ -121,9 +139,9 @@ async def toss(client: MapleClient, message: Message) -> Any:
 
 	# Don't toss if there is no active potato or the potato is not in the current channel
 	if not active_potato or active_potato['channel'] != message.channel:
-		return await client.message_create(message.channel, 'There is no potato here')
+		return await client.message_create(message.channel, *NO_POTATO_TO_TOSS)
 	if active_potato['exploding_at'] < time.time():
-		return await client.message_create(message.channel, 'Potato *just* exploded!')
+		return await client.message_create(message.channel, *POTATO_JUST_EXPLODED)
 
 	# Send potato to any other potato channel, but prioritize channels not in the current guild
 	async with potato_lock:
@@ -166,14 +184,8 @@ def build_potato_embed(exploding_at: float) -> Embed:
 	Returns:
 			Embed: Potato message embed
 	"""
-	embed = Embed(
-		'Hot Potato',
-		'You have the hot potato, which only has '
-		'{:.2f} seconds before it explodes!'
-		.format(exploding_at - time.time())
-	)
-	embed.footer = EmbedFooter('Use `.toss` to get rid of it!')
-	embed.color = Color.from_html('#B79268')
+	embed = EmbedCore.from_data(POTATO_EMBED.to_data())
+	embed.description = embed.description.format(exploding_in=exploding_at - time.time())
 	return embed
 
 
@@ -181,7 +193,7 @@ async def message_create(client: MapleClient, message: Message):
 	if not message.embeds:
 		return
 
-	if message.embeds[0].title == 'Hot Potato':
+	if message.embeds[0].title == POTATO_EMBED.title:
 		other_client = next(other_client for other_client in CLIENTS if other_client.potato_channel == message.channel)
 		if client == other_client:
 			return
@@ -192,14 +204,20 @@ async def message_create(client: MapleClient, message: Message):
 			return
 
 		await client.typing(message.channel)
-		msg = await client.message_create(message.channel, '.toss')
+		msg = await client.message_create(message.channel, other_client.command_processer.prefix + toss.__name__)
 
-		await other_client.command_processer.commands['toss'](other_client, msg, '')
+		await other_client.command_processer.commands[toss.__name__](other_client, msg, '')
 
+async def priv(c, m):
+	await c.message_create(m.channel, 'hi')
+
+async def my_handle(client, message, command, check):
+	print(m)
 
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
+		client.commands(checks=[checks.private_only(handler=my_handle)])(priv)
 
 		if client.potato_channel:
 			potato_channel_check = checks.is_channel(client.potato_channel)
