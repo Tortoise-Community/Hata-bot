@@ -1,4 +1,5 @@
 import random
+import os
 from typing import List, Set, cast
 from types import ModuleType
 from PIL import Image
@@ -13,14 +14,15 @@ from config import MapleClient
 
 clearing: Set[int] = set()
 
-Inosuke = CLIENTS[773778938405191680]
-Zenitsu = CLIENTS[774156784189046804]
+Inosuke = CLIENTS[int(os.getenv("CLIENT_IDS").split(',')[0])]
+Zenitsu = CLIENTS[int(os.getenv("CLIENT_IDS").split(',')[1])]
 
 @Inosuke.events
 async def message_create(client, message):
 	if message.author is client or message.author is Zenitsu:
 		return
 
+# Simple feature which sends the picture of the color mentioned in the message
 	try:
 		with ReuBytesIO() as buffer:
 			if len(message.content) == 8 and message.content.lower().startswith('0x'):
