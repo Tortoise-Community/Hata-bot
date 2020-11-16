@@ -76,14 +76,15 @@ def create_clients() -> None:
 		]
 		client_prefix = os.getenv('CLIENT_PREFIX') or PREFIX
 		client_prefixes = [
-			prefix.strip() or client_prefix
+			prefix.strip()
 			for prefix in (os.getenv('CLIENT_PREFIXES') or '').split(',')
+			if prefix.strip()
 		]
 		for i, token in enumerate(client_tokens):
 			client_info.append({
 				'ID': client_ids[i],
 				'TOKEN': token,
-				'PREFIX': client_prefixes[i],
+				'PREFIX': client_prefixes[i] if len(client_prefixes) == i + 1 else client_prefix,
 				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) == i + 1 else None,
 			})
 
