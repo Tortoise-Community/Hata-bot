@@ -1,6 +1,11 @@
 from typing import TypedDict, List, Optional
 
-ClientInfoDict = TypedDict('ClientInfoDict', {'ID': int, 'TOKEN': str, 'PREFIX': Optional[str], 'POTATO_CHANNEL_ID': Optional[int]}, total=False)
+ClientInfoDict = TypedDict('ClientInfoDict', {
+	'ID': int,
+	'TOKEN': str,
+	'PREFIX': Optional[str],
+	'POTATO_CHANNEL_ID': Optional[int]
+}, total=False)
 
 # Default prefix for all bots
 PREFIX = 'm.'

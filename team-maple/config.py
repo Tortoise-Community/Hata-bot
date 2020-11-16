@@ -44,12 +44,8 @@ else:
 
 			await sleep(random.uniform(*HUMAN_DELAY_RANGE))
 
-
-def create_clients() -> None:
-	"""Create all clients
-
-	First attempt to load data from enviroment variables, then the env.py file
-	"""
+def load_client_info() -> List[ClientInfoDict]:
+	"""First attempt to load data from enviroment variables, then the env.py file"""
 	client_tokens = [token.strip() for token in (os.getenv('CLIENT_TOKENS') or '').split(',') if token]
 
 	if not CLIENT_INFO and not client_tokens:
@@ -88,8 +84,14 @@ def create_clients() -> None:
 				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) >= i + 1 else None,
 			})
 
-	print('Attemping to create {} MapleClients...'.format(len(client_info)))
-	for info in client_info:
+	return client_info
+
+CLIENT_INFO = load_client_info()
+
+def create_clients() -> None:
+	"""Create all clients"""
+	print('Attemping to create {} MapleClients...'.format(len(CLIENT_INFO)))
+	for info in CLIENT_INFO:
 		potato_channel = ChannelText.precreate(info['POTATO_CHANNEL_ID']) if info['POTATO_CHANNEL_ID'] else None
 		client = MapleClient(info['TOKEN'], client_id=info['ID'])._init(potato_channel)
 		setup_ext_commands(client, info['PREFIX'] if 'PREFIX' in info else PREFIX)
