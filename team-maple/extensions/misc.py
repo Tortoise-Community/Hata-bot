@@ -1,6 +1,8 @@
+import random
 from typing import List, Set, cast
 from types import ModuleType
-
+from PIL import Image
+from hata import ReuBytesIO, Color
 
 from hata.discord import Message, MessageIterator, CLIENTS
 from hata.ext.commands.command import checks
@@ -11,6 +13,27 @@ from config import MapleClient
 
 clearing: Set[int] = set()
 
+Inosuke = CLIENTS[773778938405191680]
+Zenitsu = CLIENTS[774156784189046804]
+
+@Inosuke.events
+async def message_create(client, message):
+	if message.author is client or message.author is Zenitsu:
+		return
+
+	try:
+		with ReuBytesIO() as buffer:
+			if len(message.content) == 8 and message.content.lower().startswith('0x'):
+				img = Image.new('RGB', (150, 150), color=Color(int(message.content, base=16)).as_tuple)
+				img.save(buffer, 'png')
+				buffer.seek(0)
+				await client.message_create(message.channel, file=('color.png', buffer))
+			img = Image.new('RGB', (150, 150), color=message.content)
+			img.save(buffer, 'png')
+			buffer.seek(0)
+			await client.message_create(message.channel, file=('color.png', buffer))
+	except:
+		return
 
 async def cleartext(client: MapleClient, message: Message):
 	"""Clear all text in current channel"""
