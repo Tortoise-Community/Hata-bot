@@ -10,6 +10,7 @@ from hata.backend import Lock, sleep
 
 
 from config import MapleClient
+from utils import is_exclusive_command, make_exclusive_event
 
 
 # Time until potato exploded
@@ -50,8 +51,7 @@ active_potato: Optional[ActivePotato] = None
 potato_lock = Lock(KOKORO)
 
 
-# TODO - ensure guild always exists - if used in DMs,
-# guild must be provided, otherwise allow guild to be optional and use message guild
+
 async def potato(
 	client: MapleClient,
 	message: Message,
@@ -131,7 +131,6 @@ async def potato_countdown():
 	active_potato = None
 
 
-# TODO - handle DM usage
 async def toss(client: MapleClient, message: Message) -> Any:
 	"""Toss hot potato from current guild to another one"""
 	global active_potato
@@ -189,6 +188,7 @@ def build_potato_embed(exploding_at: float) -> Embed:
 	return embed
 
 
+@make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
 	if not message.embeds:
 		return
@@ -208,21 +208,14 @@ async def message_create(client: MapleClient, message: Message):
 
 		await other_client.command_processer.commands[toss.__name__](other_client, msg, '')
 
-async def priv(c, m):
-	await c.message_create(m.channel, 'hi')
-
-async def my_handle(client, message, command, check):
-	print(m)
-
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
-		client.commands(checks=[checks.private_only(handler=my_handle)])(priv)
 
 		if client.potato_channel:
 			potato_channel_check = checks.is_channel(client.potato_channel)
-			client.commands(checks=[potato_channel_check])(toss)
-			client.commands(checks=[potato_channel_check])(potato)
+			client.commands(checks=[potato_channel_check, is_exclusive_command()])(toss)
+			client.commands(checks=[potato_channel_check, is_exclusive_command()])(potato)
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:

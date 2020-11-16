@@ -8,6 +8,7 @@ from hata.ext.extension_loader import EXTENSION_LOADER, ExtensionError
 
 
 from config import create_clients, MapleClient
+from utils import is_exclusive_command
 
 
 logged_in = 0
@@ -22,13 +23,8 @@ async def ready(client: MapleClient):
 		print('\nAll clients logged in')
 
 
-reloading = False
 async def reload(client: MapleClient, message: Message):
 	"""Reload all loaded extensions"""
-	global reloading
-	if reloading:
-		return
-	reloading = True
 
 	msg = await client.message_create(message.channel, 'Reloading extensions...')
 	try:
@@ -37,15 +33,13 @@ async def reload(client: MapleClient, message: Message):
 	except ExtensionError as err:
 		print(err)
 		await client.message_edit(msg, f'Error during reload')
-	finally:
-		reloading = False
 
 if __name__ == '__main__':
 	# Create all the clients and add ready event listener to them
 	create_clients()
 	for client in CLIENTS:
 		client.events(ready)
-		client.commands(checks=[checks.owner_only()])(reload)
+		client.commands(checks=[checks.owner_only(), is_exclusive_command()])(reload)
 
 	# Load all `*.py` extensions in the `extensions` folder
 	for filename in os.listdir('extensions'):

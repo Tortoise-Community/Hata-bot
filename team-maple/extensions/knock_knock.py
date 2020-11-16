@@ -1,5 +1,5 @@
 import random
-from typing import Set, List, Tuple
+from typing import List, Tuple
 from types import ModuleType
 
 
@@ -8,6 +8,7 @@ from hata.ext.commands import utils
 
 
 from config import MapleClient
+from utils import is_exclusive_command, make_exclusive_event
 
 
 JOKE_RESPONSE_TIMEOUT = 15
@@ -42,20 +43,15 @@ WHO_MESSAGE = "Who's there?"
 BLANK_WHO_TEMPLATE = '{} who?'
 
 
-joke_tellers: Set[int] = set()
-jokes_responded_to: Set[int] = set()
 
-
+@make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
 	# If joke already handled, is self, or not a knock knock prompt, return
 	if (
-		message.id in jokes_responded_to
-		or client.id == message.author.id
+		client.id == message.author.id
 		or START_MESSAGE.lower() not in message.content.lower()
 	):
 		return
-
-	jokes_responded_to.add(message.id)
 
 	# Ask who
 	await client.human_delay(message.channel)
@@ -85,17 +81,9 @@ async def message_create(client: MapleClient, message: Message):
 		await client.reaction_add(punch_msg, BUILTIN_EMOJIS['laughing'])
 	except TimeoutError:
 		await client.message_create(message.channel, "Guess I'll never hear the end of that joke...")
-	finally:
-		jokes_responded_to.remove(message.id)
-
 
 async def knock_knock(client: MapleClient, message: Message):
 	"""Tell a knock knock joke"""
-	# Return if already being handled
-	if message.id in joke_tellers:
-		return
-	joke_tellers.add(message.id)
-
 	joke_setup, joke_punchline = random.choice(KNOCK_KNOCK_JOKES)
 	await client.message_create(message.channel, START_MESSAGE)
 
@@ -123,14 +111,12 @@ async def knock_knock(client: MapleClient, message: Message):
 		await client.message_create(message.channel, joke_punchline)
 	except TimeoutError:
 		await client.message_create(message.channel, 'Guess nobody wanted to hear the joke...')
-	finally:
-		joke_tellers.remove(message.id)
 
 
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
-		client.commands(knock_knock)
+		client.commands(checks=[is_exclusive_command()])(knock_knock)
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:

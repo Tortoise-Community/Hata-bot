@@ -1,18 +1,16 @@
 import random
 import re
-from typing import Callable, Optional, Set, List, Any
+from typing import Optional, List
 from types import ModuleType
 
 
-from hata.backend import sleep, Future
-from hata.discord import (
-	CLIENTS, BUILTIN_EMOJIS, KOKORO, Client, Message,
-	Embed, EventWaitforBase, ReactionAddEvent, ChannelBase
-)
-from hata.ext.commands import utils, WaitAndContinue
+from hata.backend import sleep
+from hata.discord import CLIENTS, BUILTIN_EMOJIS, Message, Embed, ReactionAddEvent, UserBase
+from hata.ext.commands import utils
 
 
 from config import MapleClient
+from utils import is_exclusive_command, make_exclusive_event, wait_for_message_edit, MessageEditWaitfor
 
 
 WORDBANK = [
@@ -72,23 +70,13 @@ def generate_hangman_embed(word: List[str], current: List[str], lives: int, won:
 	return embed
 
 
-active_games: Set[int] = set()
-
-
 async def hangman(client: MapleClient, message: Message, guessing_word: str = ''):
 	"""Start a game of hangman"""
-	global active_games
-	if message.id in active_games:
-		return
-	active_games.add(message.id)
-
 	await client.typing(message.channel)
 
 	# Prevent usage of BLANK_LETTER in word
 	if guessing_word and BLANK_LETTER in guessing_word:
-		await client.message_create(message.channel, 'Word cannot contain "{}"'.format(BLANK_LETTER))
-		active_games.remove(message.id)
-		return
+		return await client.message_create(message.channel, 'Word cannot contain "{}"'.format(BLANK_LETTER))
 
 	# Create prompt and wait for user to play
 	hangman_msg = await client.message_create(message.channel, START_HANGMAN_MESSAGE)
@@ -101,10 +89,8 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 			GUESS_WAIT_TIMEOUT
 		)
 	except TimeoutError:
-		await client.message_edit(hangman_msg, 'Guess nobody wants to play hangman...')
-		return
+		return await client.message_edit(hangman_msg, 'Guess nobody wants to play hangman...')
 	finally:
-		active_games.remove(message.id)
 		await client.reaction_delete_emoji(hangman_msg, START_HANGMAN_EMOJI)
 
 	player_id = event.user.id
@@ -156,25 +142,11 @@ async def hangman(client: MapleClient, message: Message, guessing_word: str = ''
 		)
 
 
-def wait_for_message_edit(
-	client: Client,
-	channel: ChannelBase,
-	check: Callable[[Message, Optional[dict]], Any],
-	timeout: float
-):
-	future = Future(KOKORO)
-	WaitAndContinue(future, check, channel, client.events.message_edit, timeout)
-	return future
-
-
-playing_games: Set[int] = set()
-
-
+@make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
 	# If already playing, not a hangman prompt, or is self, return
-	if message.id in playing_games or message.content != START_HANGMAN_MESSAGE or message.author.id == client.id:
+	if message.content != START_HANGMAN_MESSAGE or message.author.id == client.id:
 		return
-	playing_games.add(message.id)
 
 	# TODO - parameterize
 	await sleep(random.uniform(2, 5))
@@ -190,8 +162,6 @@ async def message_create(client: MapleClient, message: Message):
 		await wait_for_message_edit(client, message.channel, lambda msg, _: msg.id == message.id, GUESS_WAIT_TIMEOUT)
 	except TimeoutError:
 		return
-	finally:
-		playing_games.remove(message.id)
 
 	random_letters = list(RANDOM_LETTER_ORDER)
 	possible_words = [
@@ -242,15 +212,11 @@ async def message_create(client: MapleClient, message: Message):
 			break
 
 
-class MessageEditWaitfor(EventWaitforBase):
-	__event_name__ = 'message_edit'
-
-
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(MessageEditWaitfor)
 		client.events(message_create)
-		client.commands(hangman)
+		client.commands(checks=[is_exclusive_command()])(hangman)
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:

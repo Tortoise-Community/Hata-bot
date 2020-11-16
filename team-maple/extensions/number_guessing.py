@@ -1,6 +1,6 @@
 import random
 import math
-from typing import List, Set, Dict
+from typing import List, Dict
 from types import ModuleType
 
 
@@ -10,6 +10,7 @@ from hata.ext.commands import utils
 
 
 from config import MapleClient
+from utils import is_exclusive_command, make_exclusive_event
 
 
 GUESS_WAIT_TIMEOUT = 15
@@ -31,18 +32,14 @@ def is_msg_numeric(msg: Message):
 		return False
 
 
-guessing: Set[int] = set()
-
-
+@make_exclusive_event
 async def message_create(client: MapleClient, message: Message):
 	# Stop if number already being guessed, is self, or not a number guessing prompt
 	if (
-		message.id in guessing
-		or client.id == message.author.id
+		client.id == message.author.id
 		or not message.content.lower().startswith(START_TEMPLATE[0].lower())
 	):
 		return
-	guessing.add(message.id)
 
 	lowest, highest = [
 		int(part.strip())
@@ -84,19 +81,10 @@ async def message_create(client: MapleClient, message: Message):
 		await client.reaction_add(msg, BUILTIN_EMOJIS['fireworks'])
 	except TimeoutError:
 		await client.message_create(message.channel, "Guess I'll never know what the number was...")
-	finally:
-		guessing.remove(message.id)
-
-
-telling: Set[int] = set()
 
 
 async def guess_number(client: MapleClient, message: Message, lowest: int = 1, highest: int = 10):
-	# Only allow one client to tell per command
-	if message.id in telling:
-		return
-	telling.add(message.id)
-
+	"""Start a number-guessing game"""
 	# Generate message and output prompt
 	number = random.randint(lowest, highest)
 	await client.message_create(
@@ -137,14 +125,12 @@ async def guess_number(client: MapleClient, message: Message, lowest: int = 1, h
 		)
 	except TimeoutError:
 		await client.message_create(message.channel, 'Well the number was {}'.format(number))
-	finally:
-		telling.remove(message.id)
 
 
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
-		client.commands(guess_number)
+		client.commands(checks=[is_exclusive_command()])(guess_number)
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:
