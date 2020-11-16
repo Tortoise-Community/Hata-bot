@@ -131,3 +131,8 @@ def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
 		client.commands(knock_knock)
+
+def teardown(_: ModuleType):
+	for client in CLIENTS:
+		client.events.remove(message_create)
+		client.commands.remove(knock_knock)

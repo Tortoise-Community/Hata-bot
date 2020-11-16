@@ -145,3 +145,8 @@ def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.events(message_create)
 		client.commands(guess_number)
+
+def teardown(_: ModuleType):
+	for client in CLIENTS:
+		client.events.remove(message_create)
+		client.commands.remove(guess_number)

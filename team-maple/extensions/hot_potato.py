@@ -193,3 +193,11 @@ def setup(_: ModuleType):
 			potato_channel_check = checks.is_channel(client.potato_channel)
 			client.commands(checks=[potato_channel_check])(toss)
 			client.commands(checks=[potato_channel_check])(potato)
+
+def teardown(_: ModuleType):
+	for client in CLIENTS:
+		client.events.remove(message_create)
+
+		if client.potato_channel:
+			client.commands.remove(toss)
+			client.commands.remove(potato)

@@ -3,7 +3,8 @@ import os
 
 
 from hata.discord import KOKORO, CLIENTS, start_clients, stop_clients
-from hata.ext.extension_loader import EXTENSION_LOADER
+from hata.discord.message import Message
+from hata.ext.extension_loader import EXTENSION_LOADER, ExtensionError
 
 
 from config import create_clients, MapleClient
@@ -21,11 +22,30 @@ async def ready(client: MapleClient):
 		print('\nAll clients logged in')
 
 
+reloading = False
+async def reload(client: MapleClient, message: Message):
+	"""Reload all loaded extensions"""
+	global reloading
+	if reloading:
+		return
+	reloading = True
+
+	msg = await client.message_create(message.channel, 'Reloading extensions...')
+	try:
+		await EXTENSION_LOADER.reload_all()
+		await client.message_edit(msg, 'Reload complete')
+	except ExtensionError as err:
+		print(err)
+		await client.message_edit(msg, f'Error during reload')
+	finally:
+		reloading = False
+
 if __name__ == '__main__':
 	# Create all the clients and add ready event listener to them
 	create_clients()
 	for client in CLIENTS:
 		client.events(ready)
+		client.commands(reload)
 
 	# Load all `*.py` extensions in the `extensions` folder
 	for filename in os.listdir('extensions'):

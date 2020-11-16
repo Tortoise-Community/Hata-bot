@@ -239,3 +239,9 @@ def setup(_: ModuleType):
 		client.events(MessageEditWaitfor)
 		client.events(message_create)
 		client.commands(hangman)
+
+def teardown(_: ModuleType):
+	for client in CLIENTS:
+		client.events.remove(MessageEditWaitfor)
+		client.events.remove(message_create)
+		client.commands.remove(hangman)

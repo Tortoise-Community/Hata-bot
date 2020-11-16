@@ -32,3 +32,8 @@ async def cleartext(client: MapleClient, message: Message):
 def setup(_: ModuleType):
 	for client in CLIENTS:
 		client.commands(cleartext)
+
+def teardown(_: ModuleType):
+	for client in CLIENTS:
+		client.commands.remove(cleartext)
+
