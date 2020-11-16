@@ -1,5 +1,6 @@
 import random
 import re
+import os
 from typing import Optional, List, Set
 from types import ModuleType
 
@@ -34,6 +35,13 @@ WORDBANK = [
 	'Lazy',
 	'Dog',
 ]
+
+try:
+	with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'hangman_wordlist.txt'), 'r') as wordlist_file:
+		WORDBANK = [word.strip() for word in wordlist_file.read().split('\n') if word.strip()]
+	print(f'{len(WORDBANK)} hangman words loaded from wordlist')
+except:
+	pass
 
 RANDOM_LETTER_ORDER = 'ETAOINSHRDLUCMFWYPVBGKQJXZ'.lower()
 BLANK_LETTER = '_'
