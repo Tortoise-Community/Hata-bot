@@ -24,6 +24,8 @@ There are very few configurable values that don't directly apply to an invidivid
 
 - `CLIENT_PREFIX`
   - The default prefix to give to all clients that don't have one directly provided
+- `CHATBOT_API`
+  - The token for [async-cleverbot](https://pypi.org/project/async-cleverbot/)
 
 ***
 
@@ -243,3 +245,13 @@ Various fun features
 - `talk [signal]`
   - Have the clients talk to eachother like chatbots
   - In order to stop, `stop', 'shutup', 'shut` must be provided as `signal`
+
+#### Walkthrough
+
+> Any other bots that can see the channel will also attempt to guess the number
+
+The `.talk` command can be used to toggle the chatting between the first 2 bots in the .env by `.talk start` (to start) and `.talk stop` (to stop)
+
+***
+
+The `.emboss` command can be used to emboss a user's pfp, if user not provided then embosses the the author's pfp, followed by a few responses from the other bot

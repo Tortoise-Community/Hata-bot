@@ -14,6 +14,8 @@ from PIL import Image
 Inosuke = CLIENTS[CLIENT_INFO[0]['ID']]
 Zenitsu = CLIENTS[CLIENT_INFO[1]['ID']]
 
+CHATBOT_API = os.getenv("CHATBOT_API")
+
 """Embossing command, Embosses the pfp of the user given, if no user is provided then the author's pfp is embossed."""
 @Zenitsu.commands(aliases=['emboss', 'ruin'], description="Emboss a user's pfp")
 async def emb(client, message, user: 'user'=None):
@@ -76,8 +78,8 @@ async def message_create(client, message):
     if TOGGLE:
         if message.author is Zenitsu:
             with client.keep_typing(message.channel):
-                cleverbot = ac.Cleverbot("+2nmi](^0op9:uPGmJr2") # creating the client
-                response = await cleverbot.ask(message.content, emotion=ac.Emotion.anger)
+                cleverbot = ac.Cleverbot(CHATBOT_API) # creating the client
+                response = await cleverbot.ask((message.content[:60] if len(message.content) > 60 else message.content), emotion=ac.Emotion.anger)
                 await client.message_create(message.channel, response.text)
                 await cleverbot.close()
 
@@ -89,7 +91,7 @@ async def message_create(client, message):
     if TOGGLE:
         if message.author is Inosuke:
             with client.keep_typing(message.channel):                
-                cleverbot = ac.Cleverbot("+2nmi](^0op9:uPGmJr2") # creating the client
-                response = await cleverbot.ask(message.content, emotion=ac.Emotion.scared)
+                cleverbot = ac.Cleverbot(CHATBOT_API) # creating the client
+                response = await cleverbot.ask((message.content[:60] if len(message.content) > 60 else message.content), emotion=ac.Emotion.scared)
                 await client.message_create(message.channel, response.text)
                 await cleverbot.close()
