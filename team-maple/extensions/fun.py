@@ -6,15 +6,13 @@ import numpy as np
 import hata.ext.asyncio
 import async_cleverbot as ac
 from hata.discord import CLIENTS
-from config import CLIENT_INFO
+from config import CLIENT_INFO, CHATBOT_API
 from hata import ReuBytesIO
 from PIL import Image
 
 
 Inosuke = CLIENTS[CLIENT_INFO[0]['ID']]
 Zenitsu = CLIENTS[CLIENT_INFO[1]['ID']]
-
-CHATBOT_API = os.getenv("CHATBOT_API")
 
 """Embossing command, Embosses the pfp of the user given, if no user is provided then the author's pfp is embossed."""
 @Zenitsu.commands(aliases=['emboss', 'ruin'], description="Emboss a user's pfp")
