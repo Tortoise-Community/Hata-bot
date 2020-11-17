@@ -1,0 +1,15 @@
+{
+    "BOT_TOKEN": "bot token here",
+
+    "DATABASE": {
+        "host": "hostname here",
+        "port": 5432,
+        "user": "username here",
+        "password": "password here",
+        "database": "database name here"
+    },
+    "WEB_APP": {
+        "host": "hostname here",
+        "port": 8080
+    }
+}
