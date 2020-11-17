@@ -23,11 +23,11 @@ async def message_create(client, message):
 	try:
 		with ReuBytesIO() as buffer:
 			if len(message.content) == 8 and message.content.lower().startswith('0x'):
-				img = Image.new('RGB', (150, 150), color=Color(int(message.content, base=16)).as_tuple)
+				img = Image.new('RGBA', (150, 150), color=Color(int(message.content, base=16)).as_tuple)
 				img.save(buffer, 'png')
 				buffer.seek(0)
 				await client.message_create(message.channel, file=('color.png', buffer))
-			img = Image.new('RGB', (150, 150), color=message.content)
+			img = Image.new('RGBA', (150, 150), color=message.content)
 			img.save(buffer, 'png')
 			buffer.seek(0)
 			await client.message_create(message.channel, file=('color.png', buffer))
