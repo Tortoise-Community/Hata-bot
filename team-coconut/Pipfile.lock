@@ -66,11 +66,11 @@
         },
         "hata": {
             "hashes": [
-                "sha256:849c90f6f776f3a888f089ed8966da2d8f266e3a3ad4553420b20f29afb5150b",
-                "sha256:e467ba517982161af108fa927d63b358c368543f42e3d669a50b12102e8fc89c"
+                "sha256:1c28bc931360a27c6b6389b863c6fa5c9eb65ad3293f2031c366203449e8def5",
+                "sha256:fcdd8f6b18ddd8d0512b86ae860df47727eff5bdf4e91bbfacec648397ba120f"
             ],
             "index": "pypi",
-            "version": "==1.1.7"
+            "version": "==1.1.9"
         },
         "pycparser": {
             "hashes": [

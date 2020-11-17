@@ -20,6 +20,28 @@ def get_seq():
     return client_sequence
 
 
+def gettime(seconds):
+    seconds = int(seconds)
+    gets = lambda x: '' if x == 1 else 's'
+    minutes = seconds // 60
+    hours = minutes // 60
+    days = hours // 24
+    months = days // 30
+    years = months // 12
+    if seconds < 60:
+        return f'{seconds} second{gets(seconds)}'
+    elif seconds < 60*60:
+        return f'{minutes} minute{gets(minutes)}'
+    elif seconds < 60*60*24:
+        return f'{hours} hour{gets(hours)}'
+    elif seconds < 60*60*24*30:
+        return f'{days} day{gets(days)}'
+    elif seconds < 60*60*24*30*12:
+        return f'{months} months{gets(months)}'
+    else:
+        return f'{years} year{gets(years)}'
+
+
 class CommandClass:
     def __init__(self):
         self.command_klass_list = []
@@ -185,6 +207,10 @@ class MixerStream(AudioSource):
 def setdefault(_dict, val, default):
     _dict[val] = _dict.get(val, default)
     return _dict[val]
+
+
+def inverse(_dict):
+    return dict(zip(_dict.values(), _dict.keys()))
 
 
 class EscapedException(Exception):

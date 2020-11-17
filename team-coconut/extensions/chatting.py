@@ -117,12 +117,10 @@ async def unify(message: Message):
             if message.content.startswith(_client.command_processer.prefix):
                 return
         other = common_data['ChatData'][message.guild.id][message.channel.id]['other']
-        i = 0
         for _client in CLIENTS:
             if other.cached_permissions_for(_client).can_manage_webhooks:
                 break
-            i += 1
-        if i == 3:
+        else:
             return
         return await send(_client, common_data['ChatData'][message.guild.id][message.channel.id]['webhook'],
                           message)
