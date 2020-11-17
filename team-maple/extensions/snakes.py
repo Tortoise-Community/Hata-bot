@@ -1,34 +1,21 @@
-from hata.backend.futures import sleep
-from hata.discord.channel import ChannelText
-from hata.discord.user import UserBase
+import os
 import random
-from utils import is_exclusive_command
-from PIL import Image, ImageDraw
-from typing import List, Set, cast, Tuple, Union, Dict
+from typing import List, Tuple, Dict
 from types import ModuleType
 
 
-from hata.discord import Message, Color, Embed, CLIENTS
-from hata.backend import ReuBytesIO
+from PIL import Image, ImageDraw
+from hata.discord import Message, Embed, CLIENTS, BUILTIN_EMOJIS, UserBase
+from hata.backend import ReuBytesIO, sleep
+from hata.ext.commands import utils
 
 
-from config import MapleClient, CLIENT_INFO
-"""
-	try:
-		with ReuBytesIO() as buffer:
-			if len(message.content) == 8 and message.content.lower().startswith('0x'):
-				img = Image.new('RGB', (150, 150), color=Color(int(message.content, base=16)).as_tuple)
-				img.save(buffer, 'png')
-				buffer.seek(0)
-				await client.message_create(message.channel, file=('color.png', buffer))
-			img = Image.new('RGB', (150, 150), color=message.content)
-			img.save(buffer, 'png')
-			buffer.seek(0)
-			await client.message_create(message.channel, file=('color.png', buffer))
-	except:
-		return
-"""
+from config import MapleClient
+from utils import is_exclusive_command
 
+
+COLORS = ['red', 'brown', 'orange', 'purple', 'yellow', 'blue', 'green']
+BOARD_FILEPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'snake_board.png')
 BOARD_TILE_SIZE = 53
 BOARD_TILE_PADDING = 2.5
 BOARD_MAP = {}
@@ -56,54 +43,50 @@ LADDERS = {
 }
 num = 0
 for v in range(BOARD_VERTICAL_TILES):
-	#v_padding = BOARD_TILE_PADDING-1 if v % 2 == 0 else BOARD_TILE_PADDING
 	for h in range(BOARD_HORIZONTAL_TILES):
-		#h_padding = BOARD_TILE_PADDING-1 if h % 2 == 0 else BOARD_TILE_PADDING
 		x = BOARD_ONE_TOPLEFT[0] + (BOARD_TILE_SIZE * h) + (BOARD_TILE_PADDING * h)
 		y = BOARD_ONE_TOPLEFT[1] - (BOARD_TILE_SIZE * v) - (BOARD_TILE_PADDING * v)
 		num += 1
 		BOARD_MAP[num] = (x, y, [])
 
-for s, e in (
+for start, end in (
 	(11, 20),
 	(31, 40),
 	(51, 60),
 	(71, 80),
 	(91, 100),
 ):
-	for i in range(s, e+1):
-		j = s + e - i
+	for i in range(start, end + 1):
+		j = start + end - i
 		if i > j:
 			continue
 		temp = BOARD_MAP[i]
 		BOARD_MAP[i] = BOARD_MAP[j]
 		BOARD_MAP[j] = temp
 
-dump_channel = ChannelText.precreate(774699107456778250)
 
-COLORS = ['red', 'green', 'blue', 'purple', 'yellow', 'aqua']
-
-def generate_frame(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]], base: Image):
-	frame = base.copy()
-	draw = ImageDraw.Draw(frame)
+def generate_frame(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]], base: Image.Image):
+	frame: Image.Image = base.copy()
+	draw: ImageDraw.ImageDraw = ImageDraw.Draw(frame)
 	for cell, players in player_positions.items():
 		tile = BOARD_MAP[cell]
 		xy = (tile[0], tile[1], tile[0] + BOARD_TILE_SIZE, tile[1] + BOARD_TILE_SIZE)
 		player_count = len(players)
-		for i, (user, color) in enumerate(players):
-			draw.arc(xy, (i/player_count)*360, ((i+1)/player_count)*360, color, 10)
-#			for cell, tile in BOARD_MAP.items():
-#				draw.rectangle((tile[0], tile[1], tile[0] + BOARD_TILE_SIZE, tile[1] + BOARD_TILE_SIZE), fill=None, outline=(255, 0, 0), width=3)
-#				draw.text((tile[0], tile[1]), str(cell), fill=(0, 0, 0))
+
+		for i, (_, color) in enumerate(players):
+			draw.arc(xy, (i / player_count) * 360, ((i + 1) / player_count) * 360, color, 10)
+
 	return frame
 
+
 def generate_frames(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]]):
+	base: Image.Image = Image.open(BOARD_FILEPATH).convert('RGB')
+
 	frames = []
-	won = False
-	base = Image.open('board.png')
-	base = base.convert('RGB')
-	while not won:
+	won = None
+	while won is None:
 		frames.append(generate_frame(player_positions, base))
+
 		for cell, players in list(player_positions.items())[:]:
 			for player in players[:]:
 				old_cell = cell
@@ -120,8 +103,8 @@ def generate_frames(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, 
 				if cell not in player_positions:
 					player_positions[cell] = []
 				player_positions[cell].append(player)
-				if player in player_positions[old_cell]:
-					player_positions[old_cell].remove(player)
+
+				player_positions[old_cell].remove(player)
 
 				if cell == 100:
 					won = player[0]
@@ -136,47 +119,81 @@ def generate_frames(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, 
 
 	return frames, won
 
+
+async def message_create(client: MapleClient, message: Message):
+	if message.content.startswith('Who wants to play Snakes and Ladders'):
+		await client.reaction_add(message, BUILTIN_EMOJIS['raised_hand'])
+
+
 async def snakes(client: MapleClient, message: Message):
 	"""Start a game of snakes-and-ladders"""
-	embed = Embed('Snakes & Ladders', 'Game time!')
-	embed.add_image('attachment://board.gif')
-	available_colors = COLORS[:]
-	#players: Dict[UserBase, List[Union[int, Tuple[int, int, int]]]] = {
-#		client: [1, available_colors.pop()],
-#		message.author: [1, available_colors.pop()]
-#	}
-	player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]] = {
-		1: [
-			(client, available_colors.pop()),
-			(message.author, available_colors.pop()),
-		]
-	}
-	# TODO - prompt who wants to play snakes and ladders
-	for other_client in CLIENTS:
-		if other_client is client:
-			continue
-		player_positions[1].append((other_client, available_colors.pop()))
+	prompt = await client.message_create(
+		message.channel,
+		'Who wants to play Snakes and Ladders?\n\nGame will start in {} seconds...'
+		.format(60)
+	)
+	await client.reaction_add(prompt, BUILTIN_EMOJIS['raised_hand'])
+	await client.reaction_add(prompt, BUILTIN_EMOJIS['checkered_flag'])
+	try:
+		await utils.wait_for_reaction(
+			client,
+			prompt,
+			lambda event: event.user.id == message.author.id and event.emoji.name == 'checkered_flag',
+			60
+		)
+	except TimeoutError:
+		pass
 
+	available_colors = COLORS[:]
+	player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]] = {
+		1: []
+	}
+	for player in prompt.reactions[BUILTIN_EMOJIS['raised_hand']]:
+		player_positions[1].append((player, available_colors.pop()))
+
+	await client.message_delete(prompt)
+
+	desc = '..and the FULL_DUR second game begins!\nPlaying are:\n\n'
+	for player, color in player_positions[1]:
+		desc += '{:e}: {:m}\n'.format(BUILTIN_EMOJIS[color + '_square'], player)
 
 	await client.typing(message.channel)
 	frames, won = generate_frames(player_positions)
+
+	full_duration = len(frames)
+
+	embed = Embed('Snakes & Ladders', desc.replace('FULL_DUR', full_duration))
+	embed.add_image('attachment://gameplay.gif')
+
 	with ReuBytesIO() as buffer:
-		frames[0].save(buffer, save_all=True, format='gif', append_images=frames[1:], duration=1000, optimize=False, loop=0)
+		frames[0].save(
+			buffer,
+			save_all=True,
+			format='gif',
+			append_images=frames[1:],
+			duration=[1000 if f != len(frames) - 1 else 10000 for f in range(len(frames))],
+			optimize=False
+		)
 		buffer.seek(0)
 
-		atch_msg = await client.message_create(dump_channel, 'text to make deletable...?', file=('board.gif', buffer))
-		url = atch_msg.attachments[0].url
+		gameplay = await client.message_create(
+			message.channel,
+			embed=embed,
+			file=('gameplay.gif', buffer)
+		)
 
-		game_msg = await client.message_create(message.channel, url)
-
-	#await client.message_create(message.channel, '{:m} won!'.format(won))
+	await sleep(full_duration)
+	embed.description = '{:m} won!'.format(won)
+	await client.message_edit(gameplay, embed=embed)
 
 
 def setup(_: ModuleType):
 	for client in CLIENTS:
+		client.events(message_create)
 		client.commands(checks=[is_exclusive_command()])(snakes)
 
 
 def teardown(_: ModuleType):
 	for client in CLIENTS:
+		client.events.remove(message_create)
 		client.commands.remove(snakes)

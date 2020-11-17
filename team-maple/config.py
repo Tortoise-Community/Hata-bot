@@ -1,7 +1,7 @@
 import os
 import random
 import sys
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Tuple, Optional, TYPE_CHECKING
 
 
 from dotenv import load_dotenv
@@ -10,7 +10,7 @@ from hata.discord.parsers import EventDescriptor, _EventHandlerManager
 from hata.ext.commands import setup_ext_commands, CommandProcesser
 from hata.backend import KeepType, sleep
 
-from env import PREFIX, CLIENT_INFO, ClientInfoDict
+from env import PREFIX, CLIENT_INFO, CHATBOT_API, ClientInfoDict
 load_dotenv()
 
 
@@ -44,9 +44,11 @@ else:
 
 			await sleep(random.uniform(*HUMAN_DELAY_RANGE))
 
-def load_client_info() -> List[ClientInfoDict]:
+def load_client_info() -> Tuple[List[ClientInfoDict], str]:
 	"""First attempt to load data from enviroment variables, then the env.py file"""
 	client_tokens = [token.strip() for token in (os.getenv('CLIENT_TOKENS') or '').split(',') if token]
+
+	chatbot_api = os.getenv('CHATBOT_API') or CHATBOT_API
 
 	if not CLIENT_INFO and not client_tokens:
 		print('No clients found in enviroment variables or env.py')
@@ -84,9 +86,9 @@ def load_client_info() -> List[ClientInfoDict]:
 				'POTATO_CHANNEL_ID': potato_channel_ids[i] if len(potato_channel_ids) >= i + 1 else None,
 			})
 
-	return client_info
+	return client_info, chatbot_api
 
-CLIENT_INFO = load_client_info()
+CLIENT_INFO, CHATBOT_API = load_client_info()
 
 def create_clients() -> None:
 	"""Create all clients"""

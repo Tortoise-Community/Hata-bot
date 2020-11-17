@@ -6,7 +6,7 @@ import numpy as np
 import hata.ext.asyncio
 import async_cleverbot as ac
 from hata.discord import CLIENTS
-from config import CLIENT_INFO
+from config import CLIENT_INFO, CHATBOT_API
 from hata import ReuBytesIO
 from PIL import Image
 
@@ -76,8 +76,8 @@ async def message_create(client, message):
     if TOGGLE:
         if message.author is Zenitsu:
             with client.keep_typing(message.channel):
-                cleverbot = ac.Cleverbot("+2nmi](^0op9:uPGmJr2") # creating the client
-                response = await cleverbot.ask(message.content, emotion=ac.Emotion.anger)
+                cleverbot = ac.Cleverbot(CHATBOT_API) # creating the client
+                response = await cleverbot.ask((message.content[:60] if len(message.content) > 60 else message.content), emotion=ac.Emotion.anger)
                 await client.message_create(message.channel, response.text)
                 await cleverbot.close()
 
@@ -89,7 +89,7 @@ async def message_create(client, message):
     if TOGGLE:
         if message.author is Inosuke:
             with client.keep_typing(message.channel):                
-                cleverbot = ac.Cleverbot("+2nmi](^0op9:uPGmJr2") # creating the client
-                response = await cleverbot.ask(message.content, emotion=ac.Emotion.scared)
+                cleverbot = ac.Cleverbot(CHATBOT_API) # creating the client
+                response = await cleverbot.ask((message.content[:60] if len(message.content) > 60 else message.content), emotion=ac.Emotion.scared)
                 await client.message_create(message.channel, response.text)
                 await cleverbot.close()
