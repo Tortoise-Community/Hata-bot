@@ -14,6 +14,8 @@ Copy the `.env-example` to `.env` and fill in the values accordingly
 
 Additionally, one can provide the same information as `dict`s to to the `CLIENT_INFO` list in `env.py`
 
+Info for the async-cleverbot, api- https://pypi.org/project/async-cleverbot/
+
 > Enviroment variables take precedence over `CLIENT_INFO`
 
 ## Extensions
@@ -46,7 +48,7 @@ When the other player guesses incorrectly, the first player responds if the gues
 
 ***
 
-Users can play this game with bots by stating `I'm thinking of a number between 1 and 10` - with `1` and `10` being any number they want - and responding with `hith` or `low` depending on the guessed number
+Users can play this game with bots by stating `I'm thinking of a number between 1 and 10` - with `1` and `10` being any number they want - and responding with `high` or `low` depending on the guessed number
 
 When the number is guessed, then respond with `guessed` to tell the bot it's been guessed!
 
@@ -55,3 +57,11 @@ When the number is guessed, then respond with `guessed` to tell the bot it's bee
 To have the bot play as player 1, the `.guess_number` command exists, which can optionally take the `lowest` and `highest` numbers that are possible - for example, `.guess_number -50 50`
 
 > Any other bots that can see the channel will also attempt to guess the number
+
+### Fun
+
+The `.talk` command can be used to toggle the chatting between the first 2 bots in the .env by `.talk start` (to start) and `.talk stop` (to stop)
+
+***
+
+The `.emboss` command can be used to emboss a user's pfp, if user not provided then embosses the the author's pfp, followed by a few responses from the other bot
