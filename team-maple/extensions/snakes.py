@@ -1,17 +1,23 @@
 import os
+import time
 import random
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Set
 from types import ModuleType
 
 
 from PIL import Image, ImageDraw
-from hata.discord import Message, Embed, CLIENTS, BUILTIN_EMOJIS, UserBase
+from hata.discord import Message, Embed, CLIENTS, BUILTIN_EMOJIS, UserBase, DiscordException
 from hata.backend import ReuBytesIO, sleep
 from hata.ext.commands import utils
 
 
 from config import MapleClient
 from utils import is_exclusive_command
+
+try:
+	from pygifsicle import optimize
+except:
+	optimize = False
 
 
 COLORS = ['red', 'brown', 'orange', 'purple', 'yellow', 'blue', 'green']
@@ -79,23 +85,40 @@ def generate_frame(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, i
 	return frame
 
 
-def generate_frames(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]]):
+def generate_frames(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]], all_frames: bool):
 	base: Image.Image = Image.open(BOARD_FILEPATH).convert('RGB')
 
 	frames = []
+	turns = []
 	won = None
 	while won is None:
 		frames.append(generate_frame(player_positions, base))
+		turns.append(True)
 
 		for cell, players in list(player_positions.items())[:]:
 			for player in players[:]:
 				old_cell = cell
+				player_positions[old_cell].remove(player)
+
 				if cell in SNAKES:
 					cell = SNAKES[cell]
 				elif cell in LADDERS:
 					cell = LADDERS[cell]
 				else:
-					cell += random.randint(1, 6)
+					roll = random.randint(1, 6)
+					if all_frames:
+						for i in range(1, roll):
+							cell = old_cell + i
+							if cell > 100:
+								break
+							if cell not in player_positions:
+								player_positions[cell] = []
+							player_positions[cell].append(player)
+							frames.append(generate_frame(player_positions, base))
+							turns.append(False)
+							player_positions[cell].remove(player)
+					else:
+						cell += roll
 
 				if cell > 100:
 					cell = 100
@@ -103,8 +126,6 @@ def generate_frames(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, 
 				if cell not in player_positions:
 					player_positions[cell] = []
 				player_positions[cell].append(player)
-
-				player_positions[old_cell].remove(player)
 
 				if cell == 100:
 					won = player[0]
@@ -116,22 +137,45 @@ def generate_frames(player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, 
 				break
 
 	frames.append(generate_frame(player_positions, base))
+	turns.append(True)
 
-	return frames, won
+	return frames, turns, won
 
 
 async def message_create(client: MapleClient, message: Message):
-	if message.content.startswith('Who wants to play Snakes and Ladders'):
-		await client.reaction_add(message, BUILTIN_EMOJIS['raised_hand'])
+	await sleep(2)
+	if (
+		message.id in human_games
+		or not message.content.startswith('Who wants to play Snakes and Ladders')
+	):
+		return
+
+	await client.reaction_add(message, BUILTIN_EMOJIS['raised_hand'])
 
 
-async def snakes(client: MapleClient, message: Message):
+def generate_player_positions(prompt: Message):
+	available_colors = COLORS[:]
+	player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]] = {
+		1: []
+	}
+	for player in prompt.reactions[BUILTIN_EMOJIS['raised_hand']]:
+		player_positions[1].append((player, available_colors.pop()))
+
+	return player_positions
+
+human_games: Set[int] = set()
+
+async def snakes(client: MapleClient, message: Message, human_only: int = 0):
 	"""Start a game of snakes-and-ladders"""
 	prompt = await client.message_create(
 		message.channel,
 		'Who wants to play Snakes and Ladders?\n\nGame will start in {} seconds...'
 		.format(60)
 	)
+	pid = prompt.id
+	if human_only:
+		human_games.add(pid)
+
 	await client.reaction_add(prompt, BUILTIN_EMOJIS['raised_hand'])
 	await client.reaction_add(prompt, BUILTIN_EMOJIS['checkered_flag'])
 	try:
@@ -144,12 +188,8 @@ async def snakes(client: MapleClient, message: Message):
 	except TimeoutError:
 		pass
 
-	available_colors = COLORS[:]
-	player_positions: Dict[int, List[Tuple[UserBase, Tuple[int, int, int]]]] = {
-		1: []
-	}
-	for player in prompt.reactions[BUILTIN_EMOJIS['raised_hand']]:
-		player_positions[1].append((player, available_colors.pop()))
+	backup_player_positions = generate_player_positions(prompt)
+	player_positions = generate_player_positions(prompt)
 
 	await client.message_delete(prompt)
 
@@ -157,34 +197,78 @@ async def snakes(client: MapleClient, message: Message):
 	for player, color in player_positions[1]:
 		desc += '{:e}: {:m}\n'.format(BUILTIN_EMOJIS[color + '_square'], player)
 
-	await client.typing(message.channel)
-	frames, won = generate_frames(player_positions)
+	with client.keep_typing(message.channel):
+		for all_frames in range(2):
+			if all_frames:
+				print('Generating minimal amount of frames...')
+				player_positions = backup_player_positions
 
-	full_duration = len(frames)
+			frames, turns, won = generate_frames(player_positions, not all_frames)
+			durations = [(1000 if turns[f] else 250) if f != len(frames) - 1 else 10000 for f in range(len(frames))]
+			duration = int(sum(durations) / 1000)
 
-	embed = Embed('Snakes & Ladders', desc.replace('FULL_DUR', full_duration))
-	embed.add_image('attachment://gameplay.gif')
+			embed = Embed('Snakes & Ladders', desc.replace('FULL_DUR', str(duration - 10)))
+			embed.add_image('attachment://gameplay.gif')
 
-	with ReuBytesIO() as buffer:
-		frames[0].save(
-			buffer,
-			save_all=True,
-			format='gif',
-			append_images=frames[1:],
-			duration=[1000 if f != len(frames) - 1 else 10000 for f in range(len(frames))],
-			optimize=False
-		)
-		buffer.seek(0)
+			with ReuBytesIO() as buffer:
+				frames[0].save(
+					buffer,
+					save_all=True,
+					format='gif',
+					append_images=frames[1:],
+					duration=durations,
+					optimize=True
+				)
+				buffer.seek(0)
 
-		gameplay = await client.message_create(
-			message.channel,
-			embed=embed,
-			file=('gameplay.gif', buffer)
-		)
+				try:
+					gameplay = await client.message_create(
+						message.channel,
+						embed=embed,
+						file=('gameplay.gif', buffer)
+					)
+					break
+				except DiscordException:
+					print('Gameplay too large')
+					if not optimize:
+						print('pygifsicle not installed, cannot optimize')
+						continue
+					buffer.truncate(0)
+					filename = '{}.gif'.format(time.time())
+					frames[0].save(
+						filename,
+						save_all=True,
+						format='gif',
+						append_images=frames[1:],
+						duration=durations,
+						optimize=True
+					)
+					try:
+						optimize(filename)
+						with open(filename, 'rb') as image_file:
+							buffer.write(image_file.read())
+							buffer.seek(0)
+						gameplay = await client.message_create(
+							message.channel,
+							embed=embed,
+							file=('gameplay.gif', buffer)
+						)
+						os.unlink(filename)
+						break
+					except FileNotFoundError:
+						print('gifsicle not installed, cannot optimize')
+						pass
+					except DiscordException:
+						print('Gameplay still too large')
 
-	await sleep(full_duration)
-	embed.description = '{:m} won!'.format(won)
+	await sleep(duration)
+	embed.description = embed.description.replace(
+		embed.description.split('\n')[0],
+		'{:m} won after {} seconds!'.format(won, duration - 10)
+	)
 	await client.message_edit(gameplay, embed=embed)
+	if human_only:
+		human_games.remove(pid)
 
 
 def setup(_: ModuleType):

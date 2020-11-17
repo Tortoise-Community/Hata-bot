@@ -8,6 +8,20 @@ At least Python 3.8 is required.
 
 All required libraries are listed in `requirements.txt`
 
+### Optional
+
+`pygifsicle` and `gifsicle` are required for large `Snakes & Ladders` games to have animations - the game will work without them, just with no animations.
+
+Quoting the `pygifsicle` installation instructions:
+
+> While running the installation, on **MacOS** the setup will automatically install **gifsicle** using [Brew](https://brew.sh/).
+>
+> On **Linux** you will need to install gifsicle using apt-get as follows:
+>
+> `sudo apt-get install gifsicle`
+>
+> On **Windows** you will need to download and install the [correct port of the library](https://eternallybored.org/misc/gifsicle/) for your OS.
+
 ## Configuration
 
 > At least two clients must be provided
@@ -255,3 +269,18 @@ The `.talk` command can be used to toggle the chatting between the first 2 bots 
 ***
 
 The `.emboss` command can be used to emboss a user's pfp, if user not provided then embosses the the author's pfp, followed by a few responses from the other bot
+
+### Snakes
+
+Allows for playing of Snakes & Ladders
+
+#### Commands
+
+- `snakes [human_only=false]`
+  - Prompt to start a game
+
+#### Walkthrough
+
+> If `gifsicle` and `pygifsicle` are not installed, longer games will have not have fluid animations
+
+> if any 

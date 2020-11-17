@@ -14,6 +14,7 @@ from config import MapleClient, CLIENT_INFO
 Inosuke = CLIENTS[CLIENT_INFO[0]['ID']]
 Zenitsu = CLIENTS[CLIENT_INFO[1]['ID']]
 
+
 @Inosuke.events
 async def message_create(client, message):
 	if message.author is client or message.author is Zenitsu:
