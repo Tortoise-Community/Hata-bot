@@ -1,0 +1,35 @@
+.invite {
+    margin-top: 10%;
+    background: #2a2b2a;
+    text-align: center;
+}
+
+.invite h1 {
+    padding-bottom: 15px;
+    color: white;
+    font-family: sans-serif;
+}
+
+.invite p {
+    color: rgb(185, 184, 184);
+    font-family: sans-serif;
+}
+
+.invite button {
+    margin-top: 25px;
+    border: #d2691eff;
+    border-style: solid;
+    background-color: transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease 0s;
+    text-decoration: none;
+    font-weight: 520;
+    font-size: 16px;
+    color: white;
+    padding: 12px 32px;
+}
+
+.invite button:hover {
+    background-color: #d2691eff;
+}

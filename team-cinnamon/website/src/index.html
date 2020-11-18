@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="scripts/jquery.js"></script>
+    <script src="index.js"></script>
+    <script>
+        addHeader();
+        if (window.location.pathname === '/') {
+            setPage('home/home.html', '<link rel="stylesheet" href="home/home.css">');
+        } else if (window.location.pathname === '/documentation' || window.location.pathname === '/documentation/') {
+            setPage('documentation/documentation.html', '<link rel="stylesheet" href="documentation/documentation.css">');
+        }
+    </script>
+    <title>Hata Code Jam</title>
+</head>
+
+<body>
+    <div id='header'></div>
+    <div id='current_page'></div>
+</body>
+<html>
