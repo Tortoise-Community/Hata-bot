@@ -1,0 +1,7 @@
+hata
+python-dotenv
+opencv-python
+Pillow
+numpy
+async-cleverbot
+pygifsicle
