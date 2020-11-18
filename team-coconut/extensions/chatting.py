@@ -21,7 +21,7 @@ def teardown(_lib):
 class Connect:
     """
     Connects the current channel to any other channel in any other server
-    Usage - **`connect [channel mention or id] <guild>`**
+    Usage - **`connect [channel mention or id]`**
     """
     category = 'ChatCMDS'
 

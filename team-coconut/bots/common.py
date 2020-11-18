@@ -9,6 +9,9 @@ clients = cycle(CLIENTS)
 
 @ALL.events
 async def message_create(client: Client, message: Message):
+    """
+    Allows bots to interact with each other via invoking their commands
+    """
     if message.author is client:
         return
     if message.author in CLIENTS:
@@ -27,11 +30,18 @@ async def ready(client):
 
 @ALL.commands
 async def ping(client: Client, message: Message):
+    """
+    Shows the latency of the bot
+    """
     await client.message_create(message.channel, f'{client.gateway.latency * 1000.:.0f} ms')
 
 
 @ALL.commands(checks=owneronly)
 async def source(client: Client, message: Message, command: str):
+    """
+    Shows the source code of any command
+    (owner only command)
+    """
     if command == 'source':
         return
     if command not in client.command_processer.commands.keys():
@@ -42,6 +52,9 @@ async def source(client: Client, message: Message, command: str):
 
 # @Reimu.commands
 class Lookup(SEQUENTIAL_ASK_NEXT):  # TODO:- Replace this class with the userinfo command
+    """
+    The userinfo command wasn't completed so this class is broken
+    """
     def __init__(self):
         self.message_sent = None
 
@@ -71,6 +84,9 @@ class Lookup(SEQUENTIAL_ASK_NEXT):  # TODO:- Replace this class with the userinf
 
 @ALL.commands
 async def command_error(_client, _message, _command, _content, err):
+    """
+    Handles the EscapedException while still raising the other exceptions
+    """
     if isinstance(err, EscapedException):
         return print(err.error)
     raise err

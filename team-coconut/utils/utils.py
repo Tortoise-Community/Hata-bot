@@ -11,6 +11,9 @@ from hata.ext.commands.command import checks
 
 
 def get_seq():
+    """
+    Returns a dictionary of co related clients
+    """
     client_sequence = {}
     for pos, _client in enumerate(CLIENTS):
         if len(CLIENTS) == pos + 1:
@@ -21,6 +24,9 @@ def get_seq():
 
 
 def gettime(seconds):
+    """
+    Returns the highest rounded time from seconds
+    """
     seconds = int(seconds)
     gets = lambda x: '' if x == 1 else 's'
     minutes = seconds // 60
@@ -43,6 +49,9 @@ def gettime(seconds):
 
 
 class CommandClass:
+    """
+    Class which handles extension for all clients
+    """
     def __init__(self):
         self.command_klass_list = []
         self.clients = list(CLIENTS)
@@ -59,6 +68,9 @@ class CommandClass:
 
 
 class Wrapper:
+    """
+    Class which handles Commands, Events and Extensions for all the clients
+    """
     def __init__(self):
         self.command_class = CommandClass()
 
@@ -119,14 +131,23 @@ owneronly = [checks.custom(function=owneronly)]
 
 
 def colourfunc(_client, message, _name):
+    """
+    Returns colour of user at guild
+    """
     return message.author.color_at(message.guild)
 
 
 async def send(client: Client, webhook: Webhook, message: Message):
+    """
+    sends message via webhook
+    """
     await client.webhook_send(webhook, message.content, avatar_url=message.author.avatar_url, name=message.author.name)
 
 
 class SEQUENTIAL_ASK_NEXT:
+    """
+    Class which is supposed to correlate the command between the clients
+    """
     async def _exec(self, client: Client, message: Message, *args):
         await self.before_exec(client, message, *args)
         _next = get_seq()[client.id]
@@ -148,6 +169,9 @@ class SEQUENTIAL_ASK_NEXT:
 
 
 class MixerStream(AudioSource):
+    """
+    Class which merges audio streams
+    """
     __slots__ = ('_decoder', '_postprocess_called', 'sources',)
 
     def __init__(self, *sources):

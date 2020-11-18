@@ -5,6 +5,9 @@ from utils.utils import EscapedException
 
 
 class SetupExternalSafeCommands:
+    """
+    Sets up the safe commands for the client
+    """
     def __init__(self, client):
         client.safe_message_create = self.safe_message_create
         client.safe_reaction_add = self.safe_reaction_add

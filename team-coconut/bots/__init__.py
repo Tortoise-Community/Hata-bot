@@ -16,7 +16,7 @@ for client in CLIENTS:
     CLIENT_CONTEXT[client.name] = client
 
 for path in TO_LOAD:
-    EXTENSION_LOADER.load_extension(f'bots.{path}', **CLIENT_CONTEXT)
+    EXTENSION_LOADER.load_extension(f'bots.{path}', **CLIENT_CONTEXT)  # loads the bots
 
 EXTENSIONS = []
 
@@ -27,4 +27,4 @@ for path in os.listdir('extensions'):
 for path in EXTENSIONS:
     EXTENSION_LOADER.add('extensions.'+path, **CLIENT_CONTEXT)
 
-EXTENSION_LOADER.load_all()
+EXTENSION_LOADER.load_all()  # loads the Extensions

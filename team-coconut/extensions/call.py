@@ -84,6 +84,9 @@ async def cleanup(id1, id2):
 
 @ALL.commands
 async def endcall(client: Client, message: Message):
+    """
+    Ends the call
+    """
     if message.guild.id not in common_data.get('CallData', {}):
         return await client.safe_message_create(message, message.channel, 'You are not in a call')
     await cleanup(message.guild.id, common_data['CallData'][message.guild.id]['Other'])
@@ -91,6 +94,9 @@ async def endcall(client: Client, message: Message):
 
 @ALL.commands
 async def log(client: Client, message: Message):
+    """
+    Shows the call history of guild
+    """
     data = common_data.get('CallLog', {}).get(message.guild.id)
     if data:
         counter = 0
@@ -104,6 +110,10 @@ async def log(client: Client, message: Message):
 
 @CALL_COMMANDS
 class Register:
+    """
+    Registers the guild to be callable
+    (you should be in a voice channel)
+    """
     category = 'CallCMDS'
 
     async def command(self: Client, message: Message):
@@ -145,6 +155,10 @@ def check2(_id, event):
 
 @CALL_COMMANDS
 class Call:
+    """
+    It relays voice between two voice channels registered via the register command
+    Usage - **`call [guild id or name]`**
+    """
     category = 'CallCMDS'
 
     async def command(self: Client, message: Message, *number: 'str'):
@@ -302,6 +316,11 @@ class Call:
 
 @CALL_COMMANDS
 class Save:
+    """
+    It saves the number as a name so that you can call that number via that name
+    (like a phonebook)
+    Usage - **`save [guild id you want to save] [name]`**
+    """
     category = 'CallCMDS'
 
     async def command(self: Client, message: Message, number: int, *name: str):
